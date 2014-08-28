@@ -1,0 +1,2895 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 6
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"chip8.c"
+  23              	.Ltext0:
+  24              		.file 1 "../src/chip8/chip8.c"
+ 1660              		.align	2
+ 1663              	chip8_fontset:
+ 1664 0000 F0       		.byte	-16
+ 1665 0001 90       		.byte	-112
+ 1666 0002 90       		.byte	-112
+ 1667 0003 90       		.byte	-112
+ 1668 0004 F0       		.byte	-16
+ 1669 0005 20       		.byte	32
+ 1670 0006 60       		.byte	96
+ 1671 0007 20       		.byte	32
+ 1672 0008 20       		.byte	32
+ 1673 0009 70       		.byte	112
+ 1674 000a F0       		.byte	-16
+ 1675 000b 10       		.byte	16
+ 1676 000c F0       		.byte	-16
+ 1677 000d 80       		.byte	-128
+ 1678 000e F0       		.byte	-16
+ 1679 000f F0       		.byte	-16
+ 1680 0010 10       		.byte	16
+ 1681 0011 F0       		.byte	-16
+ 1682 0012 10       		.byte	16
+ 1683 0013 F0       		.byte	-16
+ 1684 0014 90       		.byte	-112
+ 1685 0015 90       		.byte	-112
+ 1686 0016 F0       		.byte	-16
+ 1687 0017 10       		.byte	16
+ 1688 0018 10       		.byte	16
+ 1689 0019 F0       		.byte	-16
+ 1690 001a 80       		.byte	-128
+ 1691 001b F0       		.byte	-16
+ 1692 001c 10       		.byte	16
+ 1693 001d F0       		.byte	-16
+ 1694 001e F0       		.byte	-16
+ 1695 001f 80       		.byte	-128
+ 1696 0020 F0       		.byte	-16
+ 1697 0021 90       		.byte	-112
+ 1698 0022 F0       		.byte	-16
+ 1699 0023 F0       		.byte	-16
+ 1700 0024 10       		.byte	16
+ 1701 0025 20       		.byte	32
+ 1702 0026 40       		.byte	64
+ 1703 0027 40       		.byte	64
+ 1704 0028 F0       		.byte	-16
+ 1705 0029 90       		.byte	-112
+ 1706 002a F0       		.byte	-16
+ 1707 002b 90       		.byte	-112
+ 1708 002c F0       		.byte	-16
+ 1709 002d F0       		.byte	-16
+ 1710 002e 90       		.byte	-112
+ 1711 002f F0       		.byte	-16
+ 1712 0030 10       		.byte	16
+ 1713 0031 F0       		.byte	-16
+ 1714 0032 F0       		.byte	-16
+ 1715 0033 90       		.byte	-112
+ 1716 0034 F0       		.byte	-16
+ 1717 0035 90       		.byte	-112
+ 1718 0036 90       		.byte	-112
+ 1719 0037 E0       		.byte	-32
+ 1720 0038 90       		.byte	-112
+ 1721 0039 E0       		.byte	-32
+ 1722 003a 90       		.byte	-112
+ 1723 003b E0       		.byte	-32
+ 1724 003c F0       		.byte	-16
+ 1725 003d 80       		.byte	-128
+ 1726 003e 80       		.byte	-128
+ 1727 003f 80       		.byte	-128
+ 1728 0040 F0       		.byte	-16
+ 1729 0041 E0       		.byte	-32
+ 1730 0042 90       		.byte	-112
+ 1731 0043 90       		.byte	-112
+ 1732 0044 90       		.byte	-112
+ 1733 0045 E0       		.byte	-32
+ 1734 0046 F0       		.byte	-16
+ 1735 0047 80       		.byte	-128
+ 1736 0048 F0       		.byte	-16
+ 1737 0049 80       		.byte	-128
+ 1738 004a F0       		.byte	-16
+ 1739 004b F0       		.byte	-16
+ 1740 004c 80       		.byte	-128
+ 1741 004d F0       		.byte	-16
+ 1742 004e 80       		.byte	-128
+ 1743 004f 80       		.byte	-128
+ 1744              		.comm	chip8_cpu,56,4
+ 1745              		.comm	memory,4096,4
+ 1746              		.comm	gfx,2048,4
+ 1747              		.comm	key,16,4
+ 1748              		.comm	running,1,1
+ 1749              		.comm	drawFlag,1,1
+ 1750              		.comm	beep,1,1
+ 1751              		.global	m_w
+ 1752              		.section	.data.m_w,"aw",%progbits
+ 1753              		.align	2
+ 1756              	m_w:
+ 1757 0000 01000000 		.word	1
+ 1758              		.global	m_z
+ 1759              		.section	.data.m_z,"aw",%progbits
+ 1760              		.align	2
+ 1763              	m_z:
+ 1764 0000 02000000 		.word	2
+ 1765              		.section	.text.xor128,"ax",%progbits
+ 1766              		.align	2
+ 1767              		.global	xor128
+ 1768              		.thumb
+ 1769              		.thumb_func
+ 1771              	xor128:
+ 1772              	.LFB0:
+   1:../src/chip8/chip8.c **** /*
+   2:../src/chip8/chip8.c ****  * chip8.c
+   3:../src/chip8/chip8.c ****  *
+   4:../src/chip8/chip8.c ****  *  Created on: 21.08.2012
+   5:../src/chip8/chip8.c ****  *      Author: sasha
+   6:../src/chip8/chip8.c ****  */
+   7:../src/chip8/chip8.c **** #include "chip8.h"
+   8:../src/chip8/chip8.c **** #include "string.h"
+   9:../src/chip8/chip8.c **** 
+  10:../src/chip8/chip8.c **** struct chip8_cpu_struct chip8_cpu;
+  11:../src/chip8/chip8.c **** byte  memory[CHIP8_RAM];
+  12:../src/chip8/chip8.c **** byte  gfx[64 * 32];
+  13:../src/chip8/chip8.c **** byte  key[16];
+  14:../src/chip8/chip8.c **** bool running;
+  15:../src/chip8/chip8.c **** bool drawFlag;
+  16:../src/chip8/chip8.c **** bool beep;
+  17:../src/chip8/chip8.c **** 
+  18:../src/chip8/chip8.c **** unsigned long m_w = 1;
+  19:../src/chip8/chip8.c **** unsigned long m_z = 2;
+  20:../src/chip8/chip8.c **** 
+  21:../src/chip8/chip8.c **** #define read_mem(a)     (memory[(a)&(CHIP8_RAM-1)])
+  22:../src/chip8/chip8.c **** #define write_mem(a,v)  (memory[(a)&(CHIP8_RAM-1)]=(v))
+  23:../src/chip8/chip8.c **** 
+  24:../src/chip8/chip8.c **** #define get_reg_offset(opcode)          (chip8_cpu.V+(opcode>>8))
+  25:../src/chip8/chip8.c **** #define get_reg_value(opcode)           (*get_reg_offset(opcode))
+  26:../src/chip8/chip8.c **** #define get_reg_offset_2(opcode)        (chip8_cpu.V+((opcode>>4)&0x0f))
+  27:../src/chip8/chip8.c **** #define get_reg_value_2(opcode)         (*get_reg_offset_2(opcode))
+  28:../src/chip8/chip8.c **** 
+  29:../src/chip8/chip8.c **** typedef void (*opcode_fn) (word opcode);
+  30:../src/chip8/chip8.c **** typedef void (*math_fn) (byte *reg1,byte reg2);
+  31:../src/chip8/chip8.c **** 
+  32:../src/chip8/chip8.c **** unsigned long xor128(void) {
+ 1773              		.loc 1 32 0
+ 1774              		.cfi_startproc
+ 1775              		@ args = 0, pretend = 0, frame = 8
+ 1776              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1777              		@ link register save eliminated.
+ 1778 0000 80B4     		push	{r7}
+ 1779              	.LCFI0:
+ 1780              		.cfi_def_cfa_offset 4
+ 1781 0002 83B0     		sub	sp, sp, #12
+ 1782              	.LCFI1:
+ 1783              		.cfi_def_cfa_offset 16
+ 1784 0004 00AF     		add	r7, sp, #0
+ 1785              		.cfi_offset 7, -4
+ 1786              	.LCFI2:
+ 1787              		.cfi_def_cfa_register 7
+  33:../src/chip8/chip8.c ****   static unsigned long x = 123456789;
+  34:../src/chip8/chip8.c ****   static unsigned long y = 362436069;
+  35:../src/chip8/chip8.c ****   static unsigned long z = 521288629;
+  36:../src/chip8/chip8.c ****   static unsigned long w = 88675123;
+  37:../src/chip8/chip8.c ****   unsigned int t;
+  38:../src/chip8/chip8.c **** 
+  39:../src/chip8/chip8.c ****   t = x ^ (x << 11);
+ 1788              		.loc 1 39 0
+ 1789 0006 164B     		ldr	r3, .L2
+ 1790 0008 1B68     		ldr	r3, [r3, #0]
+ 1791 000a 4FEAC322 		lsl	r2, r3, #11
+ 1792 000e 144B     		ldr	r3, .L2
+ 1793 0010 1B68     		ldr	r3, [r3, #0]
+ 1794 0012 82EA0303 		eor	r3, r2, r3
+ 1795 0016 7B60     		str	r3, [r7, #4]
+  40:../src/chip8/chip8.c ****   x = y; y = z; z = w;
+ 1796              		.loc 1 40 0
+ 1797 0018 124B     		ldr	r3, .L2+4
+ 1798 001a 1A68     		ldr	r2, [r3, #0]
+ 1799 001c 104B     		ldr	r3, .L2
+ 1800 001e 1A60     		str	r2, [r3, #0]
+ 1801 0020 114B     		ldr	r3, .L2+8
+ 1802 0022 1A68     		ldr	r2, [r3, #0]
+ 1803 0024 0F4B     		ldr	r3, .L2+4
+ 1804 0026 1A60     		str	r2, [r3, #0]
+ 1805 0028 104B     		ldr	r3, .L2+12
+ 1806 002a 1A68     		ldr	r2, [r3, #0]
+ 1807 002c 0E4B     		ldr	r3, .L2+8
+ 1808 002e 1A60     		str	r2, [r3, #0]
+  41:../src/chip8/chip8.c ****   return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
+ 1809              		.loc 1 41 0
+ 1810 0030 0E4B     		ldr	r3, .L2+12
+ 1811 0032 1B68     		ldr	r3, [r3, #0]
+ 1812 0034 4FEAD342 		lsr	r2, r3, #19
+ 1813 0038 0C4B     		ldr	r3, .L2+12
+ 1814 003a 1B68     		ldr	r3, [r3, #0]
+ 1815 003c 5A40     		eors	r2, r2, r3
+ 1816 003e 7B68     		ldr	r3, [r7, #4]
+ 1817 0040 4FEA1321 		lsr	r1, r3, #8
+ 1818 0044 7B68     		ldr	r3, [r7, #4]
+ 1819 0046 81EA0303 		eor	r3, r1, r3
+ 1820 004a 5A40     		eors	r2, r2, r3
+ 1821 004c 074B     		ldr	r3, .L2+12
+ 1822 004e 1A60     		str	r2, [r3, #0]
+ 1823 0050 064B     		ldr	r3, .L2+12
+ 1824 0052 1B68     		ldr	r3, [r3, #0]
+  42:../src/chip8/chip8.c **** }
+ 1825              		.loc 1 42 0
+ 1826 0054 1846     		mov	r0, r3
+ 1827 0056 07F10C07 		add	r7, r7, #12
+ 1828 005a BD46     		mov	sp, r7
+ 1829 005c 80BC     		pop	{r7}
+ 1830 005e 7047     		bx	lr
+ 1831              	.L3:
+ 1832              		.align	2
+ 1833              	.L2:
+ 1834 0060 00000000 		.word	x.4299
+ 1835 0064 00000000 		.word	y.4300
+ 1836 0068 00000000 		.word	z.4301
+ 1837 006c 00000000 		.word	w.4302
+ 1838              		.cfi_endproc
+ 1839              	.LFE0:
+ 1841              		.section	.text.op_system,"ax",%progbits
+ 1842              		.align	2
+ 1843              		.thumb
+ 1844              		.thumb_func
+ 1846              	op_system:
+ 1847              	.LFB1:
+  43:../src/chip8/chip8.c **** 
+  44:../src/chip8/chip8.c **** static void op_system (word opcode) {
+ 1848              		.loc 1 44 0
+ 1849              		.cfi_startproc
+ 1850              		@ args = 0, pretend = 0, frame = 16
+ 1851              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1852              		@ link register save eliminated.
+ 1853 0000 80B4     		push	{r7}
+ 1854              	.LCFI3:
+ 1855              		.cfi_def_cfa_offset 4
+ 1856 0002 85B0     		sub	sp, sp, #20
+ 1857              	.LCFI4:
+ 1858              		.cfi_def_cfa_offset 24
+ 1859 0004 00AF     		add	r7, sp, #0
+ 1860              		.cfi_offset 7, -4
+ 1861              	.LCFI5:
+ 1862              		.cfi_def_cfa_register 7
+ 1863 0006 0346     		mov	r3, r0
+ 1864 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  45:../src/chip8/chip8.c **** 	switch ((byte)opcode) {
+ 1865              		.loc 1 45 0
+ 1866 000a FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 1867 000c DBB2     		uxtb	r3, r3
+ 1868 000e E02B     		cmp	r3, #224
+ 1869 0010 02D0     		beq	.L6
+ 1870 0012 EE2B     		cmp	r3, #238
+ 1871 0014 17D0     		beq	.L7
+ 1872 0016 28E0     		b	.L4
+ 1873              	.L6:
+ 1874              	.LBB2:
+  46:../src/chip8/chip8.c **** 	case 0xe0:
+  47:../src/chip8/chip8.c **** 	{
+  48:../src/chip8/chip8.c **** 		word i;
+  49:../src/chip8/chip8.c **** 		for(i = 0; i < 2048; ++i)
+ 1875              		.loc 1 49 0
+ 1876 0018 4FF00003 		mov	r3, #0
+ 1877 001c FB81     		strh	r3, [r7, #14]	@ movhi
+ 1878 001e 08E0     		b	.L8
+ 1879              	.L9:
+  50:../src/chip8/chip8.c **** 			gfx[i] = 0;
+ 1880              		.loc 1 50 0 discriminator 2
+ 1881 0020 FB89     		ldrh	r3, [r7, #14]
+ 1882 0022 144A     		ldr	r2, .L10
+ 1883 0024 4FF00001 		mov	r1, #0
+ 1884 0028 D154     		strb	r1, [r2, r3]
+  49:../src/chip8/chip8.c **** 		for(i = 0; i < 2048; ++i)
+ 1885              		.loc 1 49 0 discriminator 2
+ 1886 002a FB89     		ldrh	r3, [r7, #14]	@ movhi
+ 1887 002c 03F10103 		add	r3, r3, #1
+ 1888 0030 FB81     		strh	r3, [r7, #14]	@ movhi
+ 1889              	.L8:
+  49:../src/chip8/chip8.c **** 		for(i = 0; i < 2048; ++i)
+ 1890              		.loc 1 49 0 is_stmt 0 discriminator 1
+ 1891 0032 FA89     		ldrh	r2, [r7, #14]
+ 1892 0034 40F2FF73 		movw	r3, #2047
+ 1893 0038 9A42     		cmp	r2, r3
+ 1894 003a F1D9     		bls	.L9
+  51:../src/chip8/chip8.c **** 		drawFlag =true;
+ 1895              		.loc 1 51 0 is_stmt 1
+ 1896 003c 0E4B     		ldr	r3, .L10+4
+ 1897 003e 4FF00102 		mov	r2, #1
+ 1898 0042 1A70     		strb	r2, [r3, #0]
+ 1899              	.LBE2:
+  52:../src/chip8/chip8.c **** 	} break;
+ 1900              		.loc 1 52 0
+ 1901 0044 11E0     		b	.L4
+ 1902              	.L7:
+  53:../src/chip8/chip8.c **** 	case 0xee:
+  54:../src/chip8/chip8.c **** 	{
+  55:../src/chip8/chip8.c **** 		--chip8_cpu.sp;
+ 1903              		.loc 1 55 0
+ 1904 0046 0D4B     		ldr	r3, .L10+8
+ 1905 0048 DB8E     		ldrh	r3, [r3, #54]
+ 1906 004a 03F1FF33 		add	r3, r3, #-1
+ 1907 004e 9AB2     		uxth	r2, r3
+ 1908 0050 0A4B     		ldr	r3, .L10+8
+ 1909 0052 DA86     		strh	r2, [r3, #54]	@ movhi
+  56:../src/chip8/chip8.c **** 		chip8_cpu.pc = chip8_cpu.stack[chip8_cpu.sp];
+ 1910              		.loc 1 56 0
+ 1911 0054 094B     		ldr	r3, .L10+8
+ 1912 0056 DB8E     		ldrh	r3, [r3, #54]
+ 1913 0058 1A46     		mov	r2, r3
+ 1914 005a 084B     		ldr	r3, .L10+8
+ 1915 005c 02F10802 		add	r2, r2, #8
+ 1916 0060 33F81220 		ldrh	r2, [r3, r2, lsl #1]
+ 1917 0064 054B     		ldr	r3, .L10+8
+ 1918 0066 9A86     		strh	r2, [r3, #52]	@ movhi
+  57:../src/chip8/chip8.c **** 
+  58:../src/chip8/chip8.c **** 	} break;
+ 1919              		.loc 1 58 0
+ 1920 0068 00BF     		nop
+ 1921              	.L4:
+  59:../src/chip8/chip8.c ****   }
+  60:../src/chip8/chip8.c **** }
+ 1922              		.loc 1 60 0
+ 1923 006a 07F11407 		add	r7, r7, #20
+ 1924 006e BD46     		mov	sp, r7
+ 1925 0070 80BC     		pop	{r7}
+ 1926 0072 7047     		bx	lr
+ 1927              	.L11:
+ 1928              		.align	2
+ 1929              	.L10:
+ 1930 0074 00000000 		.word	gfx
+ 1931 0078 00000000 		.word	drawFlag
+ 1932 007c 00000000 		.word	chip8_cpu
+ 1933              		.cfi_endproc
+ 1934              	.LFE1:
+ 1936              		.section	.text.op_jmp,"ax",%progbits
+ 1937              		.align	2
+ 1938              		.thumb
+ 1939              		.thumb_func
+ 1941              	op_jmp:
+ 1942              	.LFB2:
+  61:../src/chip8/chip8.c **** static void op_jmp (word opcode) {
+ 1943              		.loc 1 61 0
+ 1944              		.cfi_startproc
+ 1945              		@ args = 0, pretend = 0, frame = 8
+ 1946              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1947              		@ link register save eliminated.
+ 1948 0000 80B4     		push	{r7}
+ 1949              	.LCFI6:
+ 1950              		.cfi_def_cfa_offset 4
+ 1951 0002 83B0     		sub	sp, sp, #12
+ 1952              	.LCFI7:
+ 1953              		.cfi_def_cfa_offset 16
+ 1954 0004 00AF     		add	r7, sp, #0
+ 1955              		.cfi_offset 7, -4
+ 1956              	.LCFI8:
+ 1957              		.cfi_def_cfa_register 7
+ 1958 0006 0346     		mov	r3, r0
+ 1959 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  62:../src/chip8/chip8.c **** 	chip8_cpu.pc = opcode;
+ 1960              		.loc 1 62 0
+ 1961 000a 044B     		ldr	r3, .L13
+ 1962 000c FA88     		ldrh	r2, [r7, #6]	@ movhi
+ 1963 000e 9A86     		strh	r2, [r3, #52]	@ movhi
+  63:../src/chip8/chip8.c **** }
+ 1964              		.loc 1 63 0
+ 1965 0010 07F10C07 		add	r7, r7, #12
+ 1966 0014 BD46     		mov	sp, r7
+ 1967 0016 80BC     		pop	{r7}
+ 1968 0018 7047     		bx	lr
+ 1969              	.L14:
+ 1970 001a 00BF     		.align	2
+ 1971              	.L13:
+ 1972 001c 00000000 		.word	chip8_cpu
+ 1973              		.cfi_endproc
+ 1974              	.LFE2:
+ 1976              		.section	.text.op_call,"ax",%progbits
+ 1977              		.align	2
+ 1978              		.thumb
+ 1979              		.thumb_func
+ 1981              	op_call:
+ 1982              	.LFB3:
+  64:../src/chip8/chip8.c **** static void op_call (word opcode) {
+ 1983              		.loc 1 64 0
+ 1984              		.cfi_startproc
+ 1985              		@ args = 0, pretend = 0, frame = 8
+ 1986              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1987              		@ link register save eliminated.
+ 1988 0000 80B4     		push	{r7}
+ 1989              	.LCFI9:
+ 1990              		.cfi_def_cfa_offset 4
+ 1991 0002 83B0     		sub	sp, sp, #12
+ 1992              	.LCFI10:
+ 1993              		.cfi_def_cfa_offset 16
+ 1994 0004 00AF     		add	r7, sp, #0
+ 1995              		.cfi_offset 7, -4
+ 1996              	.LCFI11:
+ 1997              		.cfi_def_cfa_register 7
+ 1998 0006 0346     		mov	r3, r0
+ 1999 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  65:../src/chip8/chip8.c **** 	chip8_cpu.stack[chip8_cpu.sp] = chip8_cpu.pc;
+ 2000              		.loc 1 65 0
+ 2001 000a 0F4B     		ldr	r3, .L16
+ 2002 000c DB8E     		ldrh	r3, [r3, #54]
+ 2003 000e 1A46     		mov	r2, r3
+ 2004 0010 0D4B     		ldr	r3, .L16
+ 2005 0012 998E     		ldrh	r1, [r3, #52]
+ 2006 0014 0C4B     		ldr	r3, .L16
+ 2007 0016 02F10802 		add	r2, r2, #8
+ 2008 001a 23F81210 		strh	r1, [r3, r2, lsl #1]	@ movhi
+  66:../src/chip8/chip8.c **** 	chip8_cpu.sp+=1;
+ 2009              		.loc 1 66 0
+ 2010 001e 0A4B     		ldr	r3, .L16
+ 2011 0020 DB8E     		ldrh	r3, [r3, #54]
+ 2012 0022 03F10103 		add	r3, r3, #1
+ 2013 0026 9AB2     		uxth	r2, r3
+ 2014 0028 074B     		ldr	r3, .L16
+ 2015 002a DA86     		strh	r2, [r3, #54]	@ movhi
+  67:../src/chip8/chip8.c **** 	chip8_cpu.pc = opcode & 0x0FFF;
+ 2016              		.loc 1 67 0
+ 2017 002c FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 2018 002e 4FEA0353 		lsl	r3, r3, #20
+ 2019 0032 4FEA1353 		lsr	r3, r3, #20
+ 2020 0036 9AB2     		uxth	r2, r3
+ 2021 0038 034B     		ldr	r3, .L16
+ 2022 003a 9A86     		strh	r2, [r3, #52]	@ movhi
+  68:../src/chip8/chip8.c **** }
+ 2023              		.loc 1 68 0
+ 2024 003c 07F10C07 		add	r7, r7, #12
+ 2025 0040 BD46     		mov	sp, r7
+ 2026 0042 80BC     		pop	{r7}
+ 2027 0044 7047     		bx	lr
+ 2028              	.L17:
+ 2029 0046 00BF     		.align	2
+ 2030              	.L16:
+ 2031 0048 00000000 		.word	chip8_cpu
+ 2032              		.cfi_endproc
+ 2033              	.LFE3:
+ 2035              		.section	.text.op_skeq_const,"ax",%progbits
+ 2036              		.align	2
+ 2037              		.thumb
+ 2038              		.thumb_func
+ 2040              	op_skeq_const:
+ 2041              	.LFB4:
+  69:../src/chip8/chip8.c **** static void op_skeq_const (word opcode) {
+ 2042              		.loc 1 69 0
+ 2043              		.cfi_startproc
+ 2044              		@ args = 0, pretend = 0, frame = 8
+ 2045              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2046              		@ link register save eliminated.
+ 2047 0000 80B4     		push	{r7}
+ 2048              	.LCFI12:
+ 2049              		.cfi_def_cfa_offset 4
+ 2050 0002 83B0     		sub	sp, sp, #12
+ 2051              	.LCFI13:
+ 2052              		.cfi_def_cfa_offset 16
+ 2053 0004 00AF     		add	r7, sp, #0
+ 2054              		.cfi_offset 7, -4
+ 2055              	.LCFI14:
+ 2056              		.cfi_def_cfa_register 7
+ 2057 0006 0346     		mov	r3, r0
+ 2058 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  70:../src/chip8/chip8.c **** 	if (get_reg_value(opcode)==(opcode&0xff)) chip8_cpu.pc+=2;
+ 2059              		.loc 1 70 0
+ 2060 000a FB88     		ldrh	r3, [r7, #6]
+ 2061 000c 4FEA1323 		lsr	r3, r3, #8
+ 2062 0010 9BB2     		uxth	r3, r3
+ 2063 0012 1A46     		mov	r2, r3
+ 2064 0014 0A4B     		ldr	r3, .L20
+ 2065 0016 D318     		adds	r3, r2, r3
+ 2066 0018 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2067 001a 1A46     		mov	r2, r3
+ 2068 001c FB88     		ldrh	r3, [r7, #6]
+ 2069 001e 03F0FF03 		and	r3, r3, #255
+ 2070 0022 9A42     		cmp	r2, r3
+ 2071 0024 06D1     		bne	.L18
+ 2072              		.loc 1 70 0 is_stmt 0 discriminator 1
+ 2073 0026 064B     		ldr	r3, .L20
+ 2074 0028 9B8E     		ldrh	r3, [r3, #52]
+ 2075 002a 03F10203 		add	r3, r3, #2
+ 2076 002e 9AB2     		uxth	r2, r3
+ 2077 0030 034B     		ldr	r3, .L20
+ 2078 0032 9A86     		strh	r2, [r3, #52]	@ movhi
+ 2079              	.L18:
+  71:../src/chip8/chip8.c **** }
+ 2080              		.loc 1 71 0 is_stmt 1
+ 2081 0034 07F10C07 		add	r7, r7, #12
+ 2082 0038 BD46     		mov	sp, r7
+ 2083 003a 80BC     		pop	{r7}
+ 2084 003c 7047     		bx	lr
+ 2085              	.L21:
+ 2086 003e 00BF     		.align	2
+ 2087              	.L20:
+ 2088 0040 00000000 		.word	chip8_cpu
+ 2089              		.cfi_endproc
+ 2090              	.LFE4:
+ 2092              		.section	.text.op_skne_const,"ax",%progbits
+ 2093              		.align	2
+ 2094              		.thumb
+ 2095              		.thumb_func
+ 2097              	op_skne_const:
+ 2098              	.LFB5:
+  72:../src/chip8/chip8.c **** static void op_skne_const (word opcode) {
+ 2099              		.loc 1 72 0
+ 2100              		.cfi_startproc
+ 2101              		@ args = 0, pretend = 0, frame = 8
+ 2102              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2103              		@ link register save eliminated.
+ 2104 0000 80B4     		push	{r7}
+ 2105              	.LCFI15:
+ 2106              		.cfi_def_cfa_offset 4
+ 2107 0002 83B0     		sub	sp, sp, #12
+ 2108              	.LCFI16:
+ 2109              		.cfi_def_cfa_offset 16
+ 2110 0004 00AF     		add	r7, sp, #0
+ 2111              		.cfi_offset 7, -4
+ 2112              	.LCFI17:
+ 2113              		.cfi_def_cfa_register 7
+ 2114 0006 0346     		mov	r3, r0
+ 2115 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  73:../src/chip8/chip8.c **** 	if (get_reg_value(opcode)!=(opcode&0xff)) chip8_cpu.pc+=2;
+ 2116              		.loc 1 73 0
+ 2117 000a FB88     		ldrh	r3, [r7, #6]
+ 2118 000c 4FEA1323 		lsr	r3, r3, #8
+ 2119 0010 9BB2     		uxth	r3, r3
+ 2120 0012 1A46     		mov	r2, r3
+ 2121 0014 0A4B     		ldr	r3, .L24
+ 2122 0016 D318     		adds	r3, r2, r3
+ 2123 0018 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2124 001a 1A46     		mov	r2, r3
+ 2125 001c FB88     		ldrh	r3, [r7, #6]
+ 2126 001e 03F0FF03 		and	r3, r3, #255
+ 2127 0022 9A42     		cmp	r2, r3
+ 2128 0024 06D0     		beq	.L22
+ 2129              		.loc 1 73 0 is_stmt 0 discriminator 1
+ 2130 0026 064B     		ldr	r3, .L24
+ 2131 0028 9B8E     		ldrh	r3, [r3, #52]
+ 2132 002a 03F10203 		add	r3, r3, #2
+ 2133 002e 9AB2     		uxth	r2, r3
+ 2134 0030 034B     		ldr	r3, .L24
+ 2135 0032 9A86     		strh	r2, [r3, #52]	@ movhi
+ 2136              	.L22:
+  74:../src/chip8/chip8.c **** }
+ 2137              		.loc 1 74 0 is_stmt 1
+ 2138 0034 07F10C07 		add	r7, r7, #12
+ 2139 0038 BD46     		mov	sp, r7
+ 2140 003a 80BC     		pop	{r7}
+ 2141 003c 7047     		bx	lr
+ 2142              	.L25:
+ 2143 003e 00BF     		.align	2
+ 2144              	.L24:
+ 2145 0040 00000000 		.word	chip8_cpu
+ 2146              		.cfi_endproc
+ 2147              	.LFE5:
+ 2149              		.section	.text.op_skeq_reg,"ax",%progbits
+ 2150              		.align	2
+ 2151              		.thumb
+ 2152              		.thumb_func
+ 2154              	op_skeq_reg:
+ 2155              	.LFB6:
+  75:../src/chip8/chip8.c **** static void op_skeq_reg (word opcode) {
+ 2156              		.loc 1 75 0
+ 2157              		.cfi_startproc
+ 2158              		@ args = 0, pretend = 0, frame = 8
+ 2159              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2160              		@ link register save eliminated.
+ 2161 0000 80B4     		push	{r7}
+ 2162              	.LCFI18:
+ 2163              		.cfi_def_cfa_offset 4
+ 2164 0002 83B0     		sub	sp, sp, #12
+ 2165              	.LCFI19:
+ 2166              		.cfi_def_cfa_offset 16
+ 2167 0004 00AF     		add	r7, sp, #0
+ 2168              		.cfi_offset 7, -4
+ 2169              	.LCFI20:
+ 2170              		.cfi_def_cfa_register 7
+ 2171 0006 0346     		mov	r3, r0
+ 2172 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  76:../src/chip8/chip8.c **** 	if (get_reg_value(opcode)==get_reg_value_2(opcode)) chip8_cpu.pc+=2;
+ 2173              		.loc 1 76 0
+ 2174 000a FB88     		ldrh	r3, [r7, #6]
+ 2175 000c 4FEA1323 		lsr	r3, r3, #8
+ 2176 0010 9BB2     		uxth	r3, r3
+ 2177 0012 1A46     		mov	r2, r3
+ 2178 0014 0C4B     		ldr	r3, .L28
+ 2179 0016 D318     		adds	r3, r2, r3
+ 2180 0018 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 2181 001a FB88     		ldrh	r3, [r7, #6]
+ 2182 001c 4FEA1313 		lsr	r3, r3, #4
+ 2183 0020 9BB2     		uxth	r3, r3
+ 2184 0022 03F00F01 		and	r1, r3, #15
+ 2185 0026 084B     		ldr	r3, .L28
+ 2186 0028 CB18     		adds	r3, r1, r3
+ 2187 002a 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2188 002c 9A42     		cmp	r2, r3
+ 2189 002e 06D1     		bne	.L26
+ 2190              		.loc 1 76 0 is_stmt 0 discriminator 1
+ 2191 0030 054B     		ldr	r3, .L28
+ 2192 0032 9B8E     		ldrh	r3, [r3, #52]
+ 2193 0034 03F10203 		add	r3, r3, #2
+ 2194 0038 9AB2     		uxth	r2, r3
+ 2195 003a 034B     		ldr	r3, .L28
+ 2196 003c 9A86     		strh	r2, [r3, #52]	@ movhi
+ 2197              	.L26:
+  77:../src/chip8/chip8.c **** }
+ 2198              		.loc 1 77 0 is_stmt 1
+ 2199 003e 07F10C07 		add	r7, r7, #12
+ 2200 0042 BD46     		mov	sp, r7
+ 2201 0044 80BC     		pop	{r7}
+ 2202 0046 7047     		bx	lr
+ 2203              	.L29:
+ 2204              		.align	2
+ 2205              	.L28:
+ 2206 0048 00000000 		.word	chip8_cpu
+ 2207              		.cfi_endproc
+ 2208              	.LFE6:
+ 2210              		.section	.text.op_mov_const,"ax",%progbits
+ 2211              		.align	2
+ 2212              		.thumb
+ 2213              		.thumb_func
+ 2215              	op_mov_const:
+ 2216              	.LFB7:
+  78:../src/chip8/chip8.c **** static void op_mov_const (word opcode) {
+ 2217              		.loc 1 78 0
+ 2218              		.cfi_startproc
+ 2219              		@ args = 0, pretend = 0, frame = 8
+ 2220              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2221              		@ link register save eliminated.
+ 2222 0000 80B4     		push	{r7}
+ 2223              	.LCFI21:
+ 2224              		.cfi_def_cfa_offset 4
+ 2225 0002 83B0     		sub	sp, sp, #12
+ 2226              	.LCFI22:
+ 2227              		.cfi_def_cfa_offset 16
+ 2228 0004 00AF     		add	r7, sp, #0
+ 2229              		.cfi_offset 7, -4
+ 2230              	.LCFI23:
+ 2231              		.cfi_def_cfa_register 7
+ 2232 0006 0346     		mov	r3, r0
+ 2233 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  79:../src/chip8/chip8.c **** 	*get_reg_offset(opcode)=opcode&0xff;
+ 2234              		.loc 1 79 0
+ 2235 000a FB88     		ldrh	r3, [r7, #6]
+ 2236 000c 4FEA1323 		lsr	r3, r3, #8
+ 2237 0010 9BB2     		uxth	r3, r3
+ 2238 0012 1A46     		mov	r2, r3
+ 2239 0014 044B     		ldr	r3, .L31
+ 2240 0016 D318     		adds	r3, r2, r3
+ 2241 0018 FA88     		ldrh	r2, [r7, #6]	@ movhi
+ 2242 001a D2B2     		uxtb	r2, r2
+ 2243 001c 1A70     		strb	r2, [r3, #0]
+  80:../src/chip8/chip8.c **** }
+ 2244              		.loc 1 80 0
+ 2245 001e 07F10C07 		add	r7, r7, #12
+ 2246 0022 BD46     		mov	sp, r7
+ 2247 0024 80BC     		pop	{r7}
+ 2248 0026 7047     		bx	lr
+ 2249              	.L32:
+ 2250              		.align	2
+ 2251              	.L31:
+ 2252 0028 00000000 		.word	chip8_cpu
+ 2253              		.cfi_endproc
+ 2254              	.LFE7:
+ 2256              		.section	.text.op_add_const,"ax",%progbits
+ 2257              		.align	2
+ 2258              		.thumb
+ 2259              		.thumb_func
+ 2261              	op_add_const:
+ 2262              	.LFB8:
+  81:../src/chip8/chip8.c **** static void op_add_const (word opcode) {
+ 2263              		.loc 1 81 0
+ 2264              		.cfi_startproc
+ 2265              		@ args = 0, pretend = 0, frame = 8
+ 2266              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2267              		@ link register save eliminated.
+ 2268 0000 80B4     		push	{r7}
+ 2269              	.LCFI24:
+ 2270              		.cfi_def_cfa_offset 4
+ 2271 0002 83B0     		sub	sp, sp, #12
+ 2272              	.LCFI25:
+ 2273              		.cfi_def_cfa_offset 16
+ 2274 0004 00AF     		add	r7, sp, #0
+ 2275              		.cfi_offset 7, -4
+ 2276              	.LCFI26:
+ 2277              		.cfi_def_cfa_register 7
+ 2278 0006 0346     		mov	r3, r0
+ 2279 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  82:../src/chip8/chip8.c **** 	*get_reg_offset(opcode)+=opcode&0xff;
+ 2280              		.loc 1 82 0
+ 2281 000a FB88     		ldrh	r3, [r7, #6]
+ 2282 000c 4FEA1323 		lsr	r3, r3, #8
+ 2283 0010 9BB2     		uxth	r3, r3
+ 2284 0012 1A46     		mov	r2, r3
+ 2285 0014 094B     		ldr	r3, .L34
+ 2286 0016 D318     		adds	r3, r2, r3
+ 2287 0018 FA88     		ldrh	r2, [r7, #6]
+ 2288 001a 4FEA1222 		lsr	r2, r2, #8
+ 2289 001e 92B2     		uxth	r2, r2
+ 2290 0020 1146     		mov	r1, r2
+ 2291 0022 064A     		ldr	r2, .L34
+ 2292 0024 8A18     		adds	r2, r1, r2
+ 2293 0026 1178     		ldrb	r1, [r2, #0]	@ zero_extendqisi2
+ 2294 0028 FA88     		ldrh	r2, [r7, #6]	@ movhi
+ 2295 002a D2B2     		uxtb	r2, r2
+ 2296 002c 8A18     		adds	r2, r1, r2
+ 2297 002e D2B2     		uxtb	r2, r2
+ 2298 0030 1A70     		strb	r2, [r3, #0]
+  83:../src/chip8/chip8.c **** }
+ 2299              		.loc 1 83 0
+ 2300 0032 07F10C07 		add	r7, r7, #12
+ 2301 0036 BD46     		mov	sp, r7
+ 2302 0038 80BC     		pop	{r7}
+ 2303 003a 7047     		bx	lr
+ 2304              	.L35:
+ 2305              		.align	2
+ 2306              	.L34:
+ 2307 003c 00000000 		.word	chip8_cpu
+ 2308              		.cfi_endproc
+ 2309              	.LFE8:
+ 2311              		.section	.text.op_skne_reg,"ax",%progbits
+ 2312              		.align	2
+ 2313              		.thumb
+ 2314              		.thumb_func
+ 2316              	op_skne_reg:
+ 2317              	.LFB9:
+  84:../src/chip8/chip8.c **** 
+  85:../src/chip8/chip8.c **** static void op_skne_reg (word opcode) {
+ 2318              		.loc 1 85 0
+ 2319              		.cfi_startproc
+ 2320              		@ args = 0, pretend = 0, frame = 8
+ 2321              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2322              		@ link register save eliminated.
+ 2323 0000 80B4     		push	{r7}
+ 2324              	.LCFI27:
+ 2325              		.cfi_def_cfa_offset 4
+ 2326 0002 83B0     		sub	sp, sp, #12
+ 2327              	.LCFI28:
+ 2328              		.cfi_def_cfa_offset 16
+ 2329 0004 00AF     		add	r7, sp, #0
+ 2330              		.cfi_offset 7, -4
+ 2331              	.LCFI29:
+ 2332              		.cfi_def_cfa_register 7
+ 2333 0006 0346     		mov	r3, r0
+ 2334 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  86:../src/chip8/chip8.c **** 	if (get_reg_value(opcode)!=get_reg_value_2(opcode)) chip8_cpu.pc+=2;
+ 2335              		.loc 1 86 0
+ 2336 000a FB88     		ldrh	r3, [r7, #6]
+ 2337 000c 4FEA1323 		lsr	r3, r3, #8
+ 2338 0010 9BB2     		uxth	r3, r3
+ 2339 0012 1A46     		mov	r2, r3
+ 2340 0014 0C4B     		ldr	r3, .L38
+ 2341 0016 D318     		adds	r3, r2, r3
+ 2342 0018 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 2343 001a FB88     		ldrh	r3, [r7, #6]
+ 2344 001c 4FEA1313 		lsr	r3, r3, #4
+ 2345 0020 9BB2     		uxth	r3, r3
+ 2346 0022 03F00F01 		and	r1, r3, #15
+ 2347 0026 084B     		ldr	r3, .L38
+ 2348 0028 CB18     		adds	r3, r1, r3
+ 2349 002a 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2350 002c 9A42     		cmp	r2, r3
+ 2351 002e 06D0     		beq	.L36
+ 2352              		.loc 1 86 0 is_stmt 0 discriminator 1
+ 2353 0030 054B     		ldr	r3, .L38
+ 2354 0032 9B8E     		ldrh	r3, [r3, #52]
+ 2355 0034 03F10203 		add	r3, r3, #2
+ 2356 0038 9AB2     		uxth	r2, r3
+ 2357 003a 034B     		ldr	r3, .L38
+ 2358 003c 9A86     		strh	r2, [r3, #52]	@ movhi
+ 2359              	.L36:
+  87:../src/chip8/chip8.c **** }
+ 2360              		.loc 1 87 0 is_stmt 1
+ 2361 003e 07F10C07 		add	r7, r7, #12
+ 2362 0042 BD46     		mov	sp, r7
+ 2363 0044 80BC     		pop	{r7}
+ 2364 0046 7047     		bx	lr
+ 2365              	.L39:
+ 2366              		.align	2
+ 2367              	.L38:
+ 2368 0048 00000000 		.word	chip8_cpu
+ 2369              		.cfi_endproc
+ 2370              	.LFE9:
+ 2372              		.section	.text.op_mvi,"ax",%progbits
+ 2373              		.align	2
+ 2374              		.thumb
+ 2375              		.thumb_func
+ 2377              	op_mvi:
+ 2378              	.LFB10:
+  88:../src/chip8/chip8.c **** static void op_mvi (word opcode) {
+ 2379              		.loc 1 88 0
+ 2380              		.cfi_startproc
+ 2381              		@ args = 0, pretend = 0, frame = 8
+ 2382              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2383              		@ link register save eliminated.
+ 2384 0000 80B4     		push	{r7}
+ 2385              	.LCFI30:
+ 2386              		.cfi_def_cfa_offset 4
+ 2387 0002 83B0     		sub	sp, sp, #12
+ 2388              	.LCFI31:
+ 2389              		.cfi_def_cfa_offset 16
+ 2390 0004 00AF     		add	r7, sp, #0
+ 2391              		.cfi_offset 7, -4
+ 2392              	.LCFI32:
+ 2393              		.cfi_def_cfa_register 7
+ 2394 0006 0346     		mov	r3, r0
+ 2395 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  89:../src/chip8/chip8.c **** 	chip8_cpu.i=opcode;
+ 2396              		.loc 1 89 0
+ 2397 000a 044B     		ldr	r3, .L41
+ 2398 000c FA88     		ldrh	r2, [r7, #6]	@ movhi
+ 2399 000e 5A86     		strh	r2, [r3, #50]	@ movhi
+  90:../src/chip8/chip8.c **** }
+ 2400              		.loc 1 90 0
+ 2401 0010 07F10C07 		add	r7, r7, #12
+ 2402 0014 BD46     		mov	sp, r7
+ 2403 0016 80BC     		pop	{r7}
+ 2404 0018 7047     		bx	lr
+ 2405              	.L42:
+ 2406 001a 00BF     		.align	2
+ 2407              	.L41:
+ 2408 001c 00000000 		.word	chip8_cpu
+ 2409              		.cfi_endproc
+ 2410              	.LFE10:
+ 2412              		.section	.text.op_jmi,"ax",%progbits
+ 2413              		.align	2
+ 2414              		.thumb
+ 2415              		.thumb_func
+ 2417              	op_jmi:
+ 2418              	.LFB11:
+  91:../src/chip8/chip8.c **** static void op_jmi (word opcode) {
+ 2419              		.loc 1 91 0
+ 2420              		.cfi_startproc
+ 2421              		@ args = 0, pretend = 0, frame = 8
+ 2422              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2423              		@ link register save eliminated.
+ 2424 0000 80B4     		push	{r7}
+ 2425              	.LCFI33:
+ 2426              		.cfi_def_cfa_offset 4
+ 2427 0002 83B0     		sub	sp, sp, #12
+ 2428              	.LCFI34:
+ 2429              		.cfi_def_cfa_offset 16
+ 2430 0004 00AF     		add	r7, sp, #0
+ 2431              		.cfi_offset 7, -4
+ 2432              	.LCFI35:
+ 2433              		.cfi_def_cfa_register 7
+ 2434 0006 0346     		mov	r3, r0
+ 2435 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  92:../src/chip8/chip8.c **** 	chip8_cpu.pc=opcode+chip8_cpu.V[0];
+ 2436              		.loc 1 92 0
+ 2437 000a 064B     		ldr	r3, .L44
+ 2438 000c 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2439 000e 1A46     		mov	r2, r3
+ 2440 0010 FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 2441 0012 D318     		adds	r3, r2, r3
+ 2442 0014 9AB2     		uxth	r2, r3
+ 2443 0016 034B     		ldr	r3, .L44
+ 2444 0018 9A86     		strh	r2, [r3, #52]	@ movhi
+  93:../src/chip8/chip8.c **** }
+ 2445              		.loc 1 93 0
+ 2446 001a 07F10C07 		add	r7, r7, #12
+ 2447 001e BD46     		mov	sp, r7
+ 2448 0020 80BC     		pop	{r7}
+ 2449 0022 7047     		bx	lr
+ 2450              	.L45:
+ 2451              		.align	2
+ 2452              	.L44:
+ 2453 0024 00000000 		.word	chip8_cpu
+ 2454              		.cfi_endproc
+ 2455              	.LFE11:
+ 2457              		.section	.text.op_rand,"ax",%progbits
+ 2458              		.align	2
+ 2459              		.thumb
+ 2460              		.thumb_func
+ 2462              	op_rand:
+ 2463              	.LFB12:
+  94:../src/chip8/chip8.c **** static void op_rand (word opcode) {
+ 2464              		.loc 1 94 0
+ 2465              		.cfi_startproc
+ 2466              		@ args = 0, pretend = 0, frame = 8
+ 2467              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2468 0000 90B5     		push	{r4, r7, lr}
+ 2469              	.LCFI36:
+ 2470              		.cfi_def_cfa_offset 12
+ 2471 0002 83B0     		sub	sp, sp, #12
+ 2472              	.LCFI37:
+ 2473              		.cfi_def_cfa_offset 24
+ 2474 0004 00AF     		add	r7, sp, #0
+ 2475              		.cfi_offset 14, -4
+ 2476              		.cfi_offset 7, -8
+ 2477              		.cfi_offset 4, -12
+ 2478              	.LCFI38:
+ 2479              		.cfi_def_cfa_register 7
+ 2480 0006 0346     		mov	r3, r0
+ 2481 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  95:../src/chip8/chip8.c **** 	*get_reg_offset(opcode)= xor128()&(opcode&0xff);
+ 2482              		.loc 1 95 0
+ 2483 000a FB88     		ldrh	r3, [r7, #6]
+ 2484 000c 4FEA1323 		lsr	r3, r3, #8
+ 2485 0010 9BB2     		uxth	r3, r3
+ 2486 0012 1A46     		mov	r2, r3
+ 2487 0014 074B     		ldr	r3, .L47
+ 2488 0016 D418     		adds	r4, r2, r3
+ 2489 0018 FFF7FEFF 		bl	xor128
+ 2490 001c 0346     		mov	r3, r0
+ 2491 001e DAB2     		uxtb	r2, r3
+ 2492 0020 FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 2493 0022 DBB2     		uxtb	r3, r3
+ 2494 0024 02EA0303 		and	r3, r2, r3
+ 2495 0028 DBB2     		uxtb	r3, r3
+ 2496 002a 2370     		strb	r3, [r4, #0]
+  96:../src/chip8/chip8.c **** }
+ 2497              		.loc 1 96 0
+ 2498 002c 07F10C07 		add	r7, r7, #12
+ 2499 0030 BD46     		mov	sp, r7
+ 2500 0032 90BD     		pop	{r4, r7, pc}
+ 2501              	.L48:
+ 2502              		.align	2
+ 2503              	.L47:
+ 2504 0034 00000000 		.word	chip8_cpu
+ 2505              		.cfi_endproc
+ 2506              	.LFE12:
+ 2508              		.section	.text.op_sprite,"ax",%progbits
+ 2509              		.align	2
+ 2510              		.thumb
+ 2511              		.thumb_func
+ 2513              	op_sprite:
+ 2514              	.LFB13:
+  97:../src/chip8/chip8.c **** static void op_sprite (word opcode) {
+ 2515              		.loc 1 97 0
+ 2516              		.cfi_startproc
+ 2517              		@ args = 0, pretend = 0, frame = 24
+ 2518              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2519              		@ link register save eliminated.
+ 2520 0000 80B4     		push	{r7}
+ 2521              	.LCFI39:
+ 2522              		.cfi_def_cfa_offset 4
+ 2523 0002 87B0     		sub	sp, sp, #28
+ 2524              	.LCFI40:
+ 2525              		.cfi_def_cfa_offset 32
+ 2526 0004 00AF     		add	r7, sp, #0
+ 2527              		.cfi_offset 7, -4
+ 2528              	.LCFI41:
+ 2529              		.cfi_def_cfa_register 7
+ 2530 0006 0346     		mov	r3, r0
+ 2531 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+  98:../src/chip8/chip8.c **** 	/*word x,y,height,pixel;
+  99:../src/chip8/chip8.c **** 
+ 100:../src/chip8/chip8.c **** 	chip8_cpu.V[0xF]=0;*/
+ 101:../src/chip8/chip8.c **** 	 byte *q;
+ 102:../src/chip8/chip8.c **** 	 byte n,x,x2,y,collision;
+ 103:../src/chip8/chip8.c **** 	 word p;
+ 104:../src/chip8/chip8.c **** 	 x=get_reg_value(opcode)&63;
+ 2532              		.loc 1 104 0
+ 2533 000a FB88     		ldrh	r3, [r7, #6]
+ 2534 000c 4FEA1323 		lsr	r3, r3, #8
+ 2535 0010 9BB2     		uxth	r3, r3
+ 2536 0012 1A46     		mov	r2, r3
+ 2537 0014 3C4B     		ldr	r3, .L56
+ 2538 0016 D318     		adds	r3, r2, r3
+ 2539 0018 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2540 001a 03F03F03 		and	r3, r3, #63
+ 2541 001e 7B73     		strb	r3, [r7, #13]
+ 105:../src/chip8/chip8.c **** 	 y=get_reg_value_2(opcode)&31;
+ 2542              		.loc 1 105 0
+ 2543 0020 FB88     		ldrh	r3, [r7, #6]
+ 2544 0022 4FEA1313 		lsr	r3, r3, #4
+ 2545 0026 9BB2     		uxth	r3, r3
+ 2546 0028 03F00F02 		and	r2, r3, #15
+ 2547 002c 364B     		ldr	r3, .L56
+ 2548 002e D318     		adds	r3, r2, r3
+ 2549 0030 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2550 0032 03F01F03 		and	r3, r3, #31
+ 2551 0036 7B74     		strb	r3, [r7, #17]
+ 106:../src/chip8/chip8.c **** 	 p=chip8_cpu.i;
+ 2552              		.loc 1 106 0
+ 2553 0038 334B     		ldr	r3, .L56
+ 2554 003a 5B8E     		ldrh	r3, [r3, #50]	@ movhi
+ 2555 003c FB81     		strh	r3, [r7, #14]	@ movhi
+ 107:../src/chip8/chip8.c **** 	 q=gfx+y*64;
+ 2556              		.loc 1 107 0
+ 2557 003e 7B7C     		ldrb	r3, [r7, #17]	@ zero_extendqisi2
+ 2558 0040 4FEA8313 		lsl	r3, r3, #6
+ 2559 0044 1A46     		mov	r2, r3
+ 2560 0046 314B     		ldr	r3, .L56+4
+ 2561 0048 D318     		adds	r3, r2, r3
+ 2562 004a 7B61     		str	r3, [r7, #20]
+ 108:../src/chip8/chip8.c **** 	 n=opcode&0x0f;
+ 2563              		.loc 1 108 0
+ 2564 004c FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 2565 004e DBB2     		uxtb	r3, r3
+ 2566 0050 03F00F03 		and	r3, r3, #15
+ 2567 0054 FB74     		strb	r3, [r7, #19]
+ 109:../src/chip8/chip8.c **** 	 if (n+y>32) n=32-y;
+ 2568              		.loc 1 109 0
+ 2569 0056 FA7C     		ldrb	r2, [r7, #19]	@ zero_extendqisi2
+ 2570 0058 7B7C     		ldrb	r3, [r7, #17]	@ zero_extendqisi2
+ 2571 005a D318     		adds	r3, r2, r3
+ 2572 005c 202B     		cmp	r3, #32
+ 2573 005e 03DD     		ble	.L50
+ 2574              		.loc 1 109 0 is_stmt 0 discriminator 1
+ 2575 0060 7B7C     		ldrb	r3, [r7, #17]
+ 2576 0062 C3F12003 		rsb	r3, r3, #32
+ 2577 0066 FB74     		strb	r3, [r7, #19]
+ 2578              	.L50:
+ 110:../src/chip8/chip8.c **** 	 for (collision=1;n;--n,q+=64)
+ 2579              		.loc 1 110 0 is_stmt 1
+ 2580 0068 4FF00103 		mov	r3, #1
+ 2581 006c 3B74     		strb	r3, [r7, #16]
+ 2582 006e 38E0     		b	.L51
+ 2583              	.L55:
+ 111:../src/chip8/chip8.c **** 	 {
+ 112:../src/chip8/chip8.c **** 	  for (y=read_mem(p++),x2=x;y;y<<=1,x2=(x2+1)&63)
+ 2584              		.loc 1 112 0
+ 2585 0070 FB89     		ldrh	r3, [r7, #14]
+ 2586 0072 4FEA0353 		lsl	r3, r3, #20
+ 2587 0076 4FEA1353 		lsr	r3, r3, #20
+ 2588 007a 254A     		ldr	r2, .L56+8
+ 2589 007c D35C     		ldrb	r3, [r2, r3]
+ 2590 007e 7B74     		strb	r3, [r7, #17]
+ 2591 0080 FB89     		ldrh	r3, [r7, #14]	@ movhi
+ 2592 0082 03F10103 		add	r3, r3, #1
+ 2593 0086 FB81     		strh	r3, [r7, #14]	@ movhi
+ 2594 0088 7B7B     		ldrb	r3, [r7, #13]
+ 2595 008a BB74     		strb	r3, [r7, #18]
+ 2596 008c 1EE0     		b	.L52
+ 2597              	.L54:
+ 113:../src/chip8/chip8.c **** 	   if (y&0x80) collision&=(q[x2]^=0xff);
+ 2598              		.loc 1 113 0
+ 2599 008e 7B7C     		ldrb	r3, [r7, #17]	@ zero_extendqisi2
+ 2600 0090 5BB2     		sxtb	r3, r3
+ 2601 0092 002B     		cmp	r3, #0
+ 2602 0094 0FDA     		bge	.L53
+ 2603              		.loc 1 113 0 is_stmt 0 discriminator 1
+ 2604 0096 BB7C     		ldrb	r3, [r7, #18]	@ zero_extendqisi2
+ 2605 0098 7A69     		ldr	r2, [r7, #20]
+ 2606 009a D318     		adds	r3, r2, r3
+ 2607 009c BA7C     		ldrb	r2, [r7, #18]	@ zero_extendqisi2
+ 2608 009e 7969     		ldr	r1, [r7, #20]
+ 2609 00a0 8A18     		adds	r2, r1, r2
+ 2610 00a2 1278     		ldrb	r2, [r2, #0]	@ zero_extendqisi2
+ 2611 00a4 6FEA0202 		mvn	r2, r2
+ 2612 00a8 D2B2     		uxtb	r2, r2
+ 2613 00aa 1A70     		strb	r2, [r3, #0]
+ 2614 00ac 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 2615 00ae 3B7C     		ldrb	r3, [r7, #16]
+ 2616 00b0 02EA0303 		and	r3, r2, r3
+ 2617 00b4 3B74     		strb	r3, [r7, #16]
+ 2618              	.L53:
+ 112:../src/chip8/chip8.c **** 	  for (y=read_mem(p++),x2=x;y;y<<=1,x2=(x2+1)&63)
+ 2619              		.loc 1 112 0 is_stmt 1
+ 2620 00b6 7B7C     		ldrb	r3, [r7, #17]
+ 2621 00b8 4FEA4303 		lsl	r3, r3, #1
+ 2622 00bc 7B74     		strb	r3, [r7, #17]
+ 2623 00be BB7C     		ldrb	r3, [r7, #18]
+ 2624 00c0 03F10103 		add	r3, r3, #1
+ 2625 00c4 DBB2     		uxtb	r3, r3
+ 2626 00c6 03F03F03 		and	r3, r3, #63
+ 2627 00ca BB74     		strb	r3, [r7, #18]
+ 2628              	.L52:
+ 112:../src/chip8/chip8.c **** 	  for (y=read_mem(p++),x2=x;y;y<<=1,x2=(x2+1)&63)
+ 2629              		.loc 1 112 0 is_stmt 0 discriminator 1
+ 2630 00cc 7B7C     		ldrb	r3, [r7, #17]	@ zero_extendqisi2
+ 2631 00ce 002B     		cmp	r3, #0
+ 2632 00d0 DDD1     		bne	.L54
+ 110:../src/chip8/chip8.c **** 	 for (collision=1;n;--n,q+=64)
+ 2633              		.loc 1 110 0 is_stmt 1
+ 2634 00d2 FB7C     		ldrb	r3, [r7, #19]
+ 2635 00d4 03F1FF33 		add	r3, r3, #-1
+ 2636 00d8 FB74     		strb	r3, [r7, #19]
+ 2637 00da 7B69     		ldr	r3, [r7, #20]
+ 2638 00dc 03F14003 		add	r3, r3, #64
+ 2639 00e0 7B61     		str	r3, [r7, #20]
+ 2640              	.L51:
+ 110:../src/chip8/chip8.c **** 	 for (collision=1;n;--n,q+=64)
+ 2641              		.loc 1 110 0 is_stmt 0 discriminator 1
+ 2642 00e2 FB7C     		ldrb	r3, [r7, #19]	@ zero_extendqisi2
+ 2643 00e4 002B     		cmp	r3, #0
+ 2644 00e6 C3D1     		bne	.L55
+ 114:../src/chip8/chip8.c **** 	 }
+ 115:../src/chip8/chip8.c **** 	 chip8_cpu.V[15]=collision^1;
+ 2645              		.loc 1 115 0 is_stmt 1
+ 2646 00e8 3B7C     		ldrb	r3, [r7, #16]
+ 2647 00ea 83F00103 		eor	r3, r3, #1
+ 2648 00ee DAB2     		uxtb	r2, r3
+ 2649 00f0 054B     		ldr	r3, .L56
+ 2650 00f2 DA73     		strb	r2, [r3, #15]
+ 116:../src/chip8/chip8.c **** 	 drawFlag = true;
+ 2651              		.loc 1 116 0
+ 2652 00f4 074B     		ldr	r3, .L56+12
+ 2653 00f6 4FF00102 		mov	r2, #1
+ 2654 00fa 1A70     		strb	r2, [r3, #0]
+ 117:../src/chip8/chip8.c **** 	/*word x = get_reg_value(opcode);
+ 118:../src/chip8/chip8.c **** 	word y = get_reg_value_2(opcode);
+ 119:../src/chip8/chip8.c **** 	word height = opcode & 0x000F;
+ 120:../src/chip8/chip8.c **** 	word pixel;
+ 121:../src/chip8/chip8.c **** 	byte xline, yline;
+ 122:../src/chip8/chip8.c **** 	chip8_cpu.V[0xF] = 0;
+ 123:../src/chip8/chip8.c **** 	for (yline = 0; yline < height; yline++)
+ 124:../src/chip8/chip8.c **** 	{
+ 125:../src/chip8/chip8.c **** 		pixel = memory[chip8_cpu.i + yline];
+ 126:../src/chip8/chip8.c **** 		for(xline = 0; xline < 8; xline++)
+ 127:../src/chip8/chip8.c **** 		{
+ 128:../src/chip8/chip8.c **** 			if((pixel & (0x80 >> xline)) != 0)
+ 129:../src/chip8/chip8.c **** 			{
+ 130:../src/chip8/chip8.c **** 				if(gfx[(x + xline + ((y + yline) * 64))] == 1)
+ 131:../src/chip8/chip8.c **** 				{
+ 132:../src/chip8/chip8.c **** 					chip8_cpu.V[0xF] = 1;
+ 133:../src/chip8/chip8.c **** 				}
+ 134:../src/chip8/chip8.c **** 				gfx[x + xline + ((y + yline) * 64)] ^= 1;
+ 135:../src/chip8/chip8.c **** 			}
+ 136:../src/chip8/chip8.c **** 		}
+ 137:../src/chip8/chip8.c **** 	}
+ 138:../src/chip8/chip8.c **** 
+ 139:../src/chip8/chip8.c **** 	drawFlag = true;*/
+ 140:../src/chip8/chip8.c **** 
+ 141:../src/chip8/chip8.c **** }
+ 2655              		.loc 1 141 0
+ 2656 00fc 07F11C07 		add	r7, r7, #28
+ 2657 0100 BD46     		mov	sp, r7
+ 2658 0102 80BC     		pop	{r7}
+ 2659 0104 7047     		bx	lr
+ 2660              	.L57:
+ 2661 0106 00BF     		.align	2
+ 2662              	.L56:
+ 2663 0108 00000000 		.word	chip8_cpu
+ 2664 010c 00000000 		.word	gfx
+ 2665 0110 00000000 		.word	memory
+ 2666 0114 00000000 		.word	drawFlag
+ 2667              		.cfi_endproc
+ 2668              	.LFE13:
+ 2670              		.section	.text.op_key,"ax",%progbits
+ 2671              		.align	2
+ 2672              		.thumb
+ 2673              		.thumb_func
+ 2675              	op_key:
+ 2676              	.LFB14:
+ 142:../src/chip8/chip8.c **** static void op_key (word opcode) {
+ 2677              		.loc 1 142 0
+ 2678              		.cfi_startproc
+ 2679              		@ args = 0, pretend = 0, frame = 8
+ 2680              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2681              		@ link register save eliminated.
+ 2682 0000 80B4     		push	{r7}
+ 2683              	.LCFI42:
+ 2684              		.cfi_def_cfa_offset 4
+ 2685 0002 83B0     		sub	sp, sp, #12
+ 2686              	.LCFI43:
+ 2687              		.cfi_def_cfa_offset 16
+ 2688 0004 00AF     		add	r7, sp, #0
+ 2689              		.cfi_offset 7, -4
+ 2690              	.LCFI44:
+ 2691              		.cfi_def_cfa_register 7
+ 2692 0006 0346     		mov	r3, r0
+ 2693 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+ 143:../src/chip8/chip8.c **** 	switch(opcode & 0x00FF) {
+ 2694              		.loc 1 143 0
+ 2695 000a FB88     		ldrh	r3, [r7, #6]
+ 2696 000c 03F0FF03 		and	r3, r3, #255
+ 2697 0010 9E2B     		cmp	r3, #158
+ 2698 0012 02D0     		beq	.L60
+ 2699 0014 A12B     		cmp	r3, #161
+ 2700 0016 14D0     		beq	.L61
+ 2701 0018 28E0     		b	.L58
+ 2702              	.L60:
+ 144:../src/chip8/chip8.c **** 	case 0x009E:
+ 145:../src/chip8/chip8.c **** 		if(key[get_reg_value(opcode)] !=0) chip8_cpu.pc +=2;
+ 2703              		.loc 1 145 0
+ 2704 001a FB88     		ldrh	r3, [r7, #6]
+ 2705 001c 4FEA1323 		lsr	r3, r3, #8
+ 2706 0020 9BB2     		uxth	r3, r3
+ 2707 0022 1A46     		mov	r2, r3
+ 2708 0024 144B     		ldr	r3, .L64
+ 2709 0026 D318     		adds	r3, r2, r3
+ 2710 0028 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2711 002a 144A     		ldr	r2, .L64+4
+ 2712 002c D35C     		ldrb	r3, [r2, r3]	@ zero_extendqisi2
+ 2713 002e 002B     		cmp	r3, #0
+ 2714 0030 1BD0     		beq	.L63
+ 2715              		.loc 1 145 0 is_stmt 0 discriminator 1
+ 2716 0032 114B     		ldr	r3, .L64
+ 2717 0034 9B8E     		ldrh	r3, [r3, #52]
+ 2718 0036 03F10203 		add	r3, r3, #2
+ 2719 003a 9AB2     		uxth	r2, r3
+ 2720 003c 0E4B     		ldr	r3, .L64
+ 2721 003e 9A86     		strh	r2, [r3, #52]	@ movhi
+ 146:../src/chip8/chip8.c **** 	break;
+ 2722              		.loc 1 146 0 is_stmt 1 discriminator 1
+ 2723 0040 14E0     		b	.L58
+ 2724              	.L61:
+ 147:../src/chip8/chip8.c **** 
+ 148:../src/chip8/chip8.c **** 	case 0x00A1:
+ 149:../src/chip8/chip8.c **** 		if(key[get_reg_value(opcode)] ==0) chip8_cpu.pc +=2;
+ 2725              		.loc 1 149 0
+ 2726 0042 FB88     		ldrh	r3, [r7, #6]
+ 2727 0044 4FEA1323 		lsr	r3, r3, #8
+ 2728 0048 9BB2     		uxth	r3, r3
+ 2729 004a 1A46     		mov	r2, r3
+ 2730 004c 0A4B     		ldr	r3, .L64
+ 2731 004e D318     		adds	r3, r2, r3
+ 2732 0050 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2733 0052 0A4A     		ldr	r2, .L64+4
+ 2734 0054 D35C     		ldrb	r3, [r2, r3]	@ zero_extendqisi2
+ 2735 0056 002B     		cmp	r3, #0
+ 2736 0058 08D1     		bne	.L58
+ 2737              		.loc 1 149 0 is_stmt 0 discriminator 1
+ 2738 005a 074B     		ldr	r3, .L64
+ 2739 005c 9B8E     		ldrh	r3, [r3, #52]
+ 2740 005e 03F10203 		add	r3, r3, #2
+ 2741 0062 9AB2     		uxth	r2, r3
+ 2742 0064 044B     		ldr	r3, .L64
+ 2743 0066 9A86     		strh	r2, [r3, #52]	@ movhi
+ 2744 0068 00E0     		b	.L58
+ 2745              	.L63:
+ 146:../src/chip8/chip8.c **** 	break;
+ 2746              		.loc 1 146 0 is_stmt 1
+ 2747 006a 00BF     		nop
+ 2748              	.L58:
+ 150:../src/chip8/chip8.c **** 	}
+ 151:../src/chip8/chip8.c **** 
+ 152:../src/chip8/chip8.c **** }
+ 2749              		.loc 1 152 0
+ 2750 006c 07F10C07 		add	r7, r7, #12
+ 2751 0070 BD46     		mov	sp, r7
+ 2752 0072 80BC     		pop	{r7}
+ 2753 0074 7047     		bx	lr
+ 2754              	.L65:
+ 2755 0076 00BF     		.align	2
+ 2756              	.L64:
+ 2757 0078 00000000 		.word	chip8_cpu
+ 2758 007c 00000000 		.word	key
+ 2759              		.cfi_endproc
+ 2760              	.LFE14:
+ 2762              		.section	.text.op_misc,"ax",%progbits
+ 2763              		.align	2
+ 2764              		.thumb
+ 2765              		.thumb_func
+ 2767              	op_misc:
+ 2768              	.LFB15:
+ 153:../src/chip8/chip8.c **** static void op_misc (word opcode)
+ 154:../src/chip8/chip8.c **** {
+ 2769              		.loc 1 154 0
+ 2770              		.cfi_startproc
+ 2771              		@ args = 0, pretend = 0, frame = 16
+ 2772              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2773              		@ link register save eliminated.
+ 2774 0000 80B4     		push	{r7}
+ 2775              	.LCFI45:
+ 2776              		.cfi_def_cfa_offset 4
+ 2777 0002 85B0     		sub	sp, sp, #20
+ 2778              	.LCFI46:
+ 2779              		.cfi_def_cfa_offset 24
+ 2780 0004 00AF     		add	r7, sp, #0
+ 2781              		.cfi_offset 7, -4
+ 2782              	.LCFI47:
+ 2783              		.cfi_def_cfa_register 7
+ 2784 0006 0346     		mov	r3, r0
+ 2785 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+ 155:../src/chip8/chip8.c ****  byte *reg,i,j;
+ 156:../src/chip8/chip8.c ****  reg=get_reg_offset(opcode);
+ 2786              		.loc 1 156 0
+ 2787 000a FB88     		ldrh	r3, [r7, #6]
+ 2788 000c 4FEA1323 		lsr	r3, r3, #8
+ 2789 0010 9BB2     		uxth	r3, r3
+ 2790 0012 1A46     		mov	r2, r3
+ 2791 0014 794B     		ldr	r3, .L93
+ 2792 0016 D318     		adds	r3, r2, r3
+ 2793 0018 BB60     		str	r3, [r7, #8]
+ 157:../src/chip8/chip8.c ****  switch ((byte)opcode)
+ 2794              		.loc 1 157 0
+ 2795 001a FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 2796 001c DBB2     		uxtb	r3, r3
+ 2797 001e 1E2B     		cmp	r3, #30
+ 2798 0020 55D0     		beq	.L72
+ 2799 0022 1E2B     		cmp	r3, #30
+ 2800 0024 0BDC     		bgt	.L77
+ 2801 0026 0A2B     		cmp	r3, #10
+ 2802 0028 1DD0     		beq	.L69
+ 2803 002a 0A2B     		cmp	r3, #10
+ 2804 002c 02DC     		bgt	.L78
+ 2805 002e 072B     		cmp	r3, #7
+ 2806 0030 13D0     		beq	.L68
+ 2807 0032 12E1     		b	.L66
+ 2808              	.L78:
+ 2809 0034 152B     		cmp	r3, #21
+ 2810 0036 3ED0     		beq	.L70
+ 2811 0038 182B     		cmp	r3, #24
+ 2812 003a 42D0     		beq	.L71
+ 2813 003c 0DE1     		b	.L66
+ 2814              	.L77:
+ 2815 003e 332B     		cmp	r3, #51
+ 2816 0040 5BD0     		beq	.L74
+ 2817 0042 332B     		cmp	r3, #51
+ 2818 0044 02DC     		bgt	.L79
+ 2819 0046 292B     		cmp	r3, #41
+ 2820 0048 4AD0     		beq	.L73
+ 2821 004a 06E1     		b	.L66
+ 2822              	.L79:
+ 2823 004c 552B     		cmp	r3, #85
+ 2824 004e 00F09580 		beq	.L75
+ 2825 0052 652B     		cmp	r3, #101
+ 2826 0054 00F0C580 		beq	.L76
+ 2827 0058 FFE0     		b	.L66
+ 2828              	.L68:
+ 158:../src/chip8/chip8.c ****  {
+ 159:../src/chip8/chip8.c ****   case 0x07:
+ 160:../src/chip8/chip8.c ****    *reg=chip8_cpu.delay;
+ 2829              		.loc 1 160 0
+ 2830 005a 684B     		ldr	r3, .L93
+ 2831 005c 93F83020 		ldrb	r2, [r3, #48]	@ zero_extendqisi2
+ 2832 0060 BB68     		ldr	r3, [r7, #8]
+ 2833 0062 1A70     		strb	r2, [r3, #0]
+ 161:../src/chip8/chip8.c ****    break;
+ 2834              		.loc 1 161 0
+ 2835 0064 F9E0     		b	.L66
+ 2836              	.L69:
+ 2837              	.LBB3:
+ 162:../src/chip8/chip8.c ****   case 0x0a:
+ 163:../src/chip8/chip8.c ****   	  {
+ 164:../src/chip8/chip8.c **** 	  bool chip8_key_pressed =false;
+ 2838              		.loc 1 164 0
+ 2839 0066 4FF00003 		mov	r3, #0
+ 2840 006a 7B73     		strb	r3, [r7, #13]
+ 165:../src/chip8/chip8.c **** 	  for(i = 0; i < 16; ++i) {
+ 2841              		.loc 1 165 0
+ 2842 006c 4FF00003 		mov	r3, #0
+ 2843 0070 FB73     		strb	r3, [r7, #15]
+ 2844 0072 0EE0     		b	.L80
+ 2845              	.L82:
+ 166:../src/chip8/chip8.c **** 			if(key[i] != 0)
+ 2846              		.loc 1 166 0
+ 2847 0074 FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 2848 0076 624A     		ldr	r2, .L93+4
+ 2849 0078 D35C     		ldrb	r3, [r2, r3]	@ zero_extendqisi2
+ 2850 007a 002B     		cmp	r3, #0
+ 2851 007c 05D0     		beq	.L81
+ 167:../src/chip8/chip8.c **** 			{
+ 168:../src/chip8/chip8.c **** 				*reg = i;
+ 2852              		.loc 1 168 0
+ 2853 007e BB68     		ldr	r3, [r7, #8]
+ 2854 0080 FA7B     		ldrb	r2, [r7, #15]
+ 2855 0082 1A70     		strb	r2, [r3, #0]
+ 169:../src/chip8/chip8.c **** 				chip8_key_pressed = true;
+ 2856              		.loc 1 169 0
+ 2857 0084 4FF00103 		mov	r3, #1
+ 2858 0088 7B73     		strb	r3, [r7, #13]
+ 2859              	.L81:
+ 165:../src/chip8/chip8.c **** 	  for(i = 0; i < 16; ++i) {
+ 2860              		.loc 1 165 0
+ 2861 008a FB7B     		ldrb	r3, [r7, #15]
+ 2862 008c 03F10103 		add	r3, r3, #1
+ 2863 0090 FB73     		strb	r3, [r7, #15]
+ 2864              	.L80:
+ 165:../src/chip8/chip8.c **** 	  for(i = 0; i < 16; ++i) {
+ 2865              		.loc 1 165 0 is_stmt 0 discriminator 1
+ 2866 0092 FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 2867 0094 0F2B     		cmp	r3, #15
+ 2868 0096 EDD9     		bls	.L82
+ 170:../src/chip8/chip8.c **** 			}
+ 171:../src/chip8/chip8.c **** 	  }
+ 172:../src/chip8/chip8.c **** 	  if (!chip8_key_pressed)
+ 2869              		.loc 1 172 0 is_stmt 1
+ 2870 0098 7B7B     		ldrb	r3, [r7, #13]
+ 2871 009a 83F00103 		eor	r3, r3, #1
+ 2872 009e DBB2     		uxtb	r3, r3
+ 2873 00a0 002B     		cmp	r3, #0
+ 2874 00a2 00F0D980 		beq	.L92
+ 173:../src/chip8/chip8.c **** 		  chip8_cpu.pc-=2;
+ 2875              		.loc 1 173 0
+ 2876 00a6 554B     		ldr	r3, .L93
+ 2877 00a8 9B8E     		ldrh	r3, [r3, #52]
+ 2878 00aa A3F10203 		sub	r3, r3, #2
+ 2879 00ae 9AB2     		uxth	r2, r3
+ 2880 00b0 524B     		ldr	r3, .L93
+ 2881 00b2 9A86     		strh	r2, [r3, #52]	@ movhi
+ 2882              	.LBE3:
+ 174:../src/chip8/chip8.c ****   	  }
+ 175:../src/chip8/chip8.c ****   break;
+ 2883              		.loc 1 175 0
+ 2884 00b4 D1E0     		b	.L66
+ 2885              	.L70:
+ 176:../src/chip8/chip8.c ****   case 0x15:
+ 177:../src/chip8/chip8.c ****    chip8_cpu.delay=*reg;
+ 2886              		.loc 1 177 0
+ 2887 00b6 BB68     		ldr	r3, [r7, #8]
+ 2888 00b8 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 2889 00ba 504B     		ldr	r3, .L93
+ 2890 00bc 83F83020 		strb	r2, [r3, #48]
+ 178:../src/chip8/chip8.c ****    break;
+ 2891              		.loc 1 178 0
+ 2892 00c0 CBE0     		b	.L66
+ 2893              	.L71:
+ 179:../src/chip8/chip8.c ****   case 0x18:
+ 180:../src/chip8/chip8.c ****   {
+ 181:../src/chip8/chip8.c ****    chip8_cpu.sound=*reg;
+ 2894              		.loc 1 181 0
+ 2895 00c2 BB68     		ldr	r3, [r7, #8]
+ 2896 00c4 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 2897 00c6 4D4B     		ldr	r3, .L93
+ 2898 00c8 83F83120 		strb	r2, [r3, #49]
+ 182:../src/chip8/chip8.c ****    //if (chip8_cpu.sound) chip8_sound_on();
+ 183:../src/chip8/chip8.c ****   }
+ 184:../src/chip8/chip8.c ****    break;
+ 2899              		.loc 1 184 0
+ 2900 00cc C5E0     		b	.L66
+ 2901              	.L72:
+ 185:../src/chip8/chip8.c ****   case 0x1e:
+ 186:../src/chip8/chip8.c **** 	  chip8_cpu.i+=(*reg);
+ 2902              		.loc 1 186 0
+ 2903 00ce 4B4B     		ldr	r3, .L93
+ 2904 00d0 5A8E     		ldrh	r2, [r3, #50]
+ 2905 00d2 BB68     		ldr	r3, [r7, #8]
+ 2906 00d4 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2907 00d6 D318     		adds	r3, r2, r3
+ 2908 00d8 9AB2     		uxth	r2, r3
+ 2909 00da 484B     		ldr	r3, .L93
+ 2910 00dc 5A86     		strh	r2, [r3, #50]	@ movhi
+ 187:../src/chip8/chip8.c ****    break;
+ 2911              		.loc 1 187 0
+ 2912 00de BCE0     		b	.L66
+ 2913              	.L73:
+ 188:../src/chip8/chip8.c ****   case 0x29:
+ 189:../src/chip8/chip8.c ****    chip8_cpu.i=((word)(*reg&0x0f))*5;
+ 2914              		.loc 1 189 0
+ 2915 00e0 BB68     		ldr	r3, [r7, #8]
+ 2916 00e2 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 2917 00e4 03F00F03 		and	r3, r3, #15
+ 2918 00e8 9BB2     		uxth	r3, r3
+ 2919 00ea 1A46     		mov	r2, r3	@ movhi
+ 2920 00ec 4FEA8202 		lsl	r2, r2, #2
+ 2921 00f0 D318     		adds	r3, r2, r3
+ 2922 00f2 9AB2     		uxth	r2, r3
+ 2923 00f4 414B     		ldr	r3, .L93
+ 2924 00f6 5A86     		strh	r2, [r3, #50]	@ movhi
+ 190:../src/chip8/chip8.c ****    break;
+ 2925              		.loc 1 190 0
+ 2926 00f8 AFE0     		b	.L66
+ 2927              	.L74:
+ 191:../src/chip8/chip8.c ****   case 0x33:
+ 192:../src/chip8/chip8.c ****    i=*reg;
+ 2928              		.loc 1 192 0
+ 2929 00fa BB68     		ldr	r3, [r7, #8]
+ 2930 00fc 1B78     		ldrb	r3, [r3, #0]
+ 2931 00fe FB73     		strb	r3, [r7, #15]
+ 193:../src/chip8/chip8.c ****    for (j=0;i>=100;i-=100) j++;
+ 2932              		.loc 1 193 0
+ 2933 0100 4FF00003 		mov	r3, #0
+ 2934 0104 BB73     		strb	r3, [r7, #14]
+ 2935 0106 07E0     		b	.L84
+ 2936              	.L85:
+ 2937              		.loc 1 193 0 is_stmt 0 discriminator 2
+ 2938 0108 BB7B     		ldrb	r3, [r7, #14]
+ 2939 010a 03F10103 		add	r3, r3, #1
+ 2940 010e BB73     		strb	r3, [r7, #14]
+ 2941 0110 FB7B     		ldrb	r3, [r7, #15]
+ 2942 0112 A3F16403 		sub	r3, r3, #100
+ 2943 0116 FB73     		strb	r3, [r7, #15]
+ 2944              	.L84:
+ 2945              		.loc 1 193 0 discriminator 1
+ 2946 0118 FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 2947 011a 632B     		cmp	r3, #99
+ 2948 011c F4D8     		bhi	.L85
+ 194:../src/chip8/chip8.c ****    write_mem (chip8_cpu.i,j);
+ 2949              		.loc 1 194 0 is_stmt 1
+ 2950 011e 374B     		ldr	r3, .L93
+ 2951 0120 5B8E     		ldrh	r3, [r3, #50]
+ 2952 0122 4FEA0353 		lsl	r3, r3, #20
+ 2953 0126 4FEA1353 		lsr	r3, r3, #20
+ 2954 012a 364A     		ldr	r2, .L93+8
+ 2955 012c B97B     		ldrb	r1, [r7, #14]
+ 2956 012e D154     		strb	r1, [r2, r3]
+ 195:../src/chip8/chip8.c ****    for (j=0;i>=10;i-=10) j++;
+ 2957              		.loc 1 195 0
+ 2958 0130 4FF00003 		mov	r3, #0
+ 2959 0134 BB73     		strb	r3, [r7, #14]
+ 2960 0136 07E0     		b	.L86
+ 2961              	.L87:
+ 2962              		.loc 1 195 0 is_stmt 0 discriminator 2
+ 2963 0138 BB7B     		ldrb	r3, [r7, #14]
+ 2964 013a 03F10103 		add	r3, r3, #1
+ 2965 013e BB73     		strb	r3, [r7, #14]
+ 2966 0140 FB7B     		ldrb	r3, [r7, #15]
+ 2967 0142 A3F10A03 		sub	r3, r3, #10
+ 2968 0146 FB73     		strb	r3, [r7, #15]
+ 2969              	.L86:
+ 2970              		.loc 1 195 0 discriminator 1
+ 2971 0148 FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 2972 014a 092B     		cmp	r3, #9
+ 2973 014c F4D8     		bhi	.L87
+ 196:../src/chip8/chip8.c ****    write_mem (chip8_cpu.i+1,j);
+ 2974              		.loc 1 196 0 is_stmt 1
+ 2975 014e 2B4B     		ldr	r3, .L93
+ 2976 0150 5B8E     		ldrh	r3, [r3, #50]
+ 2977 0152 03F10103 		add	r3, r3, #1
+ 2978 0156 4FEA0353 		lsl	r3, r3, #20
+ 2979 015a 4FEA1353 		lsr	r3, r3, #20
+ 2980 015e 294A     		ldr	r2, .L93+8
+ 2981 0160 B97B     		ldrb	r1, [r7, #14]
+ 2982 0162 D154     		strb	r1, [r2, r3]
+ 197:../src/chip8/chip8.c ****    write_mem (chip8_cpu.i+2,i);
+ 2983              		.loc 1 197 0
+ 2984 0164 254B     		ldr	r3, .L93
+ 2985 0166 5B8E     		ldrh	r3, [r3, #50]
+ 2986 0168 03F10203 		add	r3, r3, #2
+ 2987 016c 4FEA0353 		lsl	r3, r3, #20
+ 2988 0170 4FEA1353 		lsr	r3, r3, #20
+ 2989 0174 234A     		ldr	r2, .L93+8
+ 2990 0176 F97B     		ldrb	r1, [r7, #15]
+ 2991 0178 D154     		strb	r1, [r2, r3]
+ 198:../src/chip8/chip8.c ****    break;
+ 2992              		.loc 1 198 0
+ 2993 017a 6EE0     		b	.L66
+ 2994              	.L75:
+ 199:../src/chip8/chip8.c ****   case 0x55:
+ 200:../src/chip8/chip8.c ****   {
+ 201:../src/chip8/chip8.c ****    for (i=0,j=(opcode>>8)&0x0f;i<=j;++i)
+ 2995              		.loc 1 201 0
+ 2996 017c 4FF00003 		mov	r3, #0
+ 2997 0180 FB73     		strb	r3, [r7, #15]
+ 2998 0182 FB88     		ldrh	r3, [r7, #6]
+ 2999 0184 4FEA1323 		lsr	r3, r3, #8
+ 3000 0188 9BB2     		uxth	r3, r3
+ 3001 018a DBB2     		uxtb	r3, r3
+ 3002 018c 03F00F03 		and	r3, r3, #15
+ 3003 0190 BB73     		strb	r3, [r7, #14]
+ 3004 0192 11E0     		b	.L88
+ 3005              	.L89:
+ 202:../src/chip8/chip8.c ****     write_mem(chip8_cpu.i+i,chip8_cpu.V[i]);
+ 3006              		.loc 1 202 0 discriminator 2
+ 3007 0194 194B     		ldr	r3, .L93
+ 3008 0196 5B8E     		ldrh	r3, [r3, #50]
+ 3009 0198 1A46     		mov	r2, r3
+ 3010 019a FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 3011 019c D318     		adds	r3, r2, r3
+ 3012 019e 4FEA0353 		lsl	r3, r3, #20
+ 3013 01a2 4FEA1353 		lsr	r3, r3, #20
+ 3014 01a6 FA7B     		ldrb	r2, [r7, #15]	@ zero_extendqisi2
+ 3015 01a8 1449     		ldr	r1, .L93
+ 3016 01aa 895C     		ldrb	r1, [r1, r2]	@ zero_extendqisi2
+ 3017 01ac 154A     		ldr	r2, .L93+8
+ 3018 01ae D154     		strb	r1, [r2, r3]
+ 201:../src/chip8/chip8.c ****    for (i=0,j=(opcode>>8)&0x0f;i<=j;++i)
+ 3019              		.loc 1 201 0 discriminator 2
+ 3020 01b0 FB7B     		ldrb	r3, [r7, #15]
+ 3021 01b2 03F10103 		add	r3, r3, #1
+ 3022 01b6 FB73     		strb	r3, [r7, #15]
+ 3023              	.L88:
+ 201:../src/chip8/chip8.c ****    for (i=0,j=(opcode>>8)&0x0f;i<=j;++i)
+ 3024              		.loc 1 201 0 is_stmt 0 discriminator 1
+ 3025 01b8 FA7B     		ldrb	r2, [r7, #15]	@ zero_extendqisi2
+ 3026 01ba BB7B     		ldrb	r3, [r7, #14]	@ zero_extendqisi2
+ 3027 01bc 9A42     		cmp	r2, r3
+ 3028 01be E9D9     		bls	.L89
+ 203:../src/chip8/chip8.c ****    chip8_cpu.i += ((opcode>>8)&0x0f)+1; // ?
+ 3029              		.loc 1 203 0 is_stmt 1
+ 3030 01c0 0E4B     		ldr	r3, .L93
+ 3031 01c2 5A8E     		ldrh	r2, [r3, #50]
+ 3032 01c4 FB88     		ldrh	r3, [r7, #6]
+ 3033 01c6 4FEA1323 		lsr	r3, r3, #8
+ 3034 01ca 9BB2     		uxth	r3, r3
+ 3035 01cc 03F00F03 		and	r3, r3, #15
+ 3036 01d0 9BB2     		uxth	r3, r3
+ 3037 01d2 D318     		adds	r3, r2, r3
+ 3038 01d4 9BB2     		uxth	r3, r3
+ 3039 01d6 03F10103 		add	r3, r3, #1
+ 3040 01da 9AB2     		uxth	r2, r3
+ 3041 01dc 074B     		ldr	r3, .L93
+ 3042 01de 5A86     		strh	r2, [r3, #50]	@ movhi
+ 204:../src/chip8/chip8.c ****   }
+ 205:../src/chip8/chip8.c ****    break;
+ 3043              		.loc 1 205 0
+ 3044 01e0 3BE0     		b	.L66
+ 3045              	.L76:
+ 206:../src/chip8/chip8.c ****   case 0x65:
+ 207:../src/chip8/chip8.c ****   {
+ 208:../src/chip8/chip8.c ****    for (i=0,j=(opcode>>8)&0x0f;i<=j;++i)
+ 3046              		.loc 1 208 0
+ 3047 01e2 4FF00003 		mov	r3, #0
+ 3048 01e6 FB73     		strb	r3, [r7, #15]
+ 3049 01e8 FB88     		ldrh	r3, [r7, #6]
+ 3050 01ea 4FEA1323 		lsr	r3, r3, #8
+ 3051 01ee 9BB2     		uxth	r3, r3
+ 3052 01f0 DBB2     		uxtb	r3, r3
+ 3053 01f2 03F00F03 		and	r3, r3, #15
+ 3054 01f6 BB73     		strb	r3, [r7, #14]
+ 3055 01f8 18E0     		b	.L90
+ 3056              	.L94:
+ 3057 01fa 00BF     		.align	2
+ 3058              	.L93:
+ 3059 01fc 00000000 		.word	chip8_cpu
+ 3060 0200 00000000 		.word	key
+ 3061 0204 00000000 		.word	memory
+ 3062              	.L91:
+ 209:../src/chip8/chip8.c ****     chip8_cpu.V[i]=read_mem(chip8_cpu.i+i);
+ 3063              		.loc 1 209 0 discriminator 2
+ 3064 0208 FA7B     		ldrb	r2, [r7, #15]	@ zero_extendqisi2
+ 3065 020a 164B     		ldr	r3, .L95
+ 3066 020c 5B8E     		ldrh	r3, [r3, #50]
+ 3067 020e 1946     		mov	r1, r3
+ 3068 0210 FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 3069 0212 CB18     		adds	r3, r1, r3
+ 3070 0214 4FEA0353 		lsl	r3, r3, #20
+ 3071 0218 4FEA1353 		lsr	r3, r3, #20
+ 3072 021c 1249     		ldr	r1, .L95+4
+ 3073 021e C95C     		ldrb	r1, [r1, r3]	@ zero_extendqisi2
+ 3074 0220 104B     		ldr	r3, .L95
+ 3075 0222 9954     		strb	r1, [r3, r2]
+ 208:../src/chip8/chip8.c ****    for (i=0,j=(opcode>>8)&0x0f;i<=j;++i)
+ 3076              		.loc 1 208 0 discriminator 2
+ 3077 0224 FB7B     		ldrb	r3, [r7, #15]
+ 3078 0226 03F10103 		add	r3, r3, #1
+ 3079 022a FB73     		strb	r3, [r7, #15]
+ 3080              	.L90:
+ 208:../src/chip8/chip8.c ****    for (i=0,j=(opcode>>8)&0x0f;i<=j;++i)
+ 3081              		.loc 1 208 0 is_stmt 0 discriminator 1
+ 3082 022c FA7B     		ldrb	r2, [r7, #15]	@ zero_extendqisi2
+ 3083 022e BB7B     		ldrb	r3, [r7, #14]	@ zero_extendqisi2
+ 3084 0230 9A42     		cmp	r2, r3
+ 3085 0232 E9D9     		bls	.L91
+ 210:../src/chip8/chip8.c ****    chip8_cpu.i += ((opcode>>8)&0x0f)+1; //?
+ 3086              		.loc 1 210 0 is_stmt 1
+ 3087 0234 0B4B     		ldr	r3, .L95
+ 3088 0236 5A8E     		ldrh	r2, [r3, #50]
+ 3089 0238 FB88     		ldrh	r3, [r7, #6]
+ 3090 023a 4FEA1323 		lsr	r3, r3, #8
+ 3091 023e 9BB2     		uxth	r3, r3
+ 3092 0240 03F00F03 		and	r3, r3, #15
+ 3093 0244 9BB2     		uxth	r3, r3
+ 3094 0246 D318     		adds	r3, r2, r3
+ 3095 0248 9BB2     		uxth	r3, r3
+ 3096 024a 03F10103 		add	r3, r3, #1
+ 3097 024e 9AB2     		uxth	r2, r3
+ 3098 0250 044B     		ldr	r3, .L95
+ 3099 0252 5A86     		strh	r2, [r3, #50]	@ movhi
+ 211:../src/chip8/chip8.c ****   }
+ 212:../src/chip8/chip8.c ****    break;
+ 3100              		.loc 1 212 0
+ 3101 0254 00BF     		nop
+ 3102 0256 00E0     		b	.L66
+ 3103              	.L92:
+ 175:../src/chip8/chip8.c ****   break;
+ 3104              		.loc 1 175 0
+ 3105 0258 00BF     		nop
+ 3106              	.L66:
+ 213:../src/chip8/chip8.c ****  }
+ 214:../src/chip8/chip8.c **** }
+ 3107              		.loc 1 214 0
+ 3108 025a 07F11407 		add	r7, r7, #20
+ 3109 025e BD46     		mov	sp, r7
+ 3110 0260 80BC     		pop	{r7}
+ 3111 0262 7047     		bx	lr
+ 3112              	.L96:
+ 3113              		.align	2
+ 3114              	.L95:
+ 3115 0264 00000000 		.word	chip8_cpu
+ 3116 0268 00000000 		.word	memory
+ 3117              		.cfi_endproc
+ 3118              	.LFE15:
+ 3120              		.section	.text.math_mov,"ax",%progbits
+ 3121              		.align	2
+ 3122              		.thumb
+ 3123              		.thumb_func
+ 3125              	math_mov:
+ 3126              	.LFB16:
+ 215:../src/chip8/chip8.c **** 
+ 216:../src/chip8/chip8.c **** //Math function
+ 217:../src/chip8/chip8.c **** 
+ 218:../src/chip8/chip8.c **** static void math_mov (byte *reg1,byte reg2) {
+ 3127              		.loc 1 218 0
+ 3128              		.cfi_startproc
+ 3129              		@ args = 0, pretend = 0, frame = 8
+ 3130              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3131              		@ link register save eliminated.
+ 3132 0000 80B4     		push	{r7}
+ 3133              	.LCFI48:
+ 3134              		.cfi_def_cfa_offset 4
+ 3135 0002 83B0     		sub	sp, sp, #12
+ 3136              	.LCFI49:
+ 3137              		.cfi_def_cfa_offset 16
+ 3138 0004 00AF     		add	r7, sp, #0
+ 3139              		.cfi_offset 7, -4
+ 3140              	.LCFI50:
+ 3141              		.cfi_def_cfa_register 7
+ 3142 0006 7860     		str	r0, [r7, #4]
+ 3143 0008 0B46     		mov	r3, r1
+ 3144 000a FB70     		strb	r3, [r7, #3]
+ 219:../src/chip8/chip8.c **** 	*reg1=reg2;
+ 3145              		.loc 1 219 0
+ 3146 000c 7B68     		ldr	r3, [r7, #4]
+ 3147 000e FA78     		ldrb	r2, [r7, #3]
+ 3148 0010 1A70     		strb	r2, [r3, #0]
+ 220:../src/chip8/chip8.c **** 
+ 221:../src/chip8/chip8.c **** }
+ 3149              		.loc 1 221 0
+ 3150 0012 07F10C07 		add	r7, r7, #12
+ 3151 0016 BD46     		mov	sp, r7
+ 3152 0018 80BC     		pop	{r7}
+ 3153 001a 7047     		bx	lr
+ 3154              		.cfi_endproc
+ 3155              	.LFE16:
+ 3157              		.section	.text.math_or,"ax",%progbits
+ 3158              		.align	2
+ 3159              		.thumb
+ 3160              		.thumb_func
+ 3162              	math_or:
+ 3163              	.LFB17:
+ 222:../src/chip8/chip8.c **** static void math_or (byte *reg1,byte reg2) {
+ 3164              		.loc 1 222 0
+ 3165              		.cfi_startproc
+ 3166              		@ args = 0, pretend = 0, frame = 8
+ 3167              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3168              		@ link register save eliminated.
+ 3169 0000 80B4     		push	{r7}
+ 3170              	.LCFI51:
+ 3171              		.cfi_def_cfa_offset 4
+ 3172 0002 83B0     		sub	sp, sp, #12
+ 3173              	.LCFI52:
+ 3174              		.cfi_def_cfa_offset 16
+ 3175 0004 00AF     		add	r7, sp, #0
+ 3176              		.cfi_offset 7, -4
+ 3177              	.LCFI53:
+ 3178              		.cfi_def_cfa_register 7
+ 3179 0006 7860     		str	r0, [r7, #4]
+ 3180 0008 0B46     		mov	r3, r1
+ 3181 000a FB70     		strb	r3, [r7, #3]
+ 223:../src/chip8/chip8.c **** 	*reg1|=reg2;
+ 3182              		.loc 1 223 0
+ 3183 000c 7B68     		ldr	r3, [r7, #4]
+ 3184 000e 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3185 0010 FB78     		ldrb	r3, [r7, #3]
+ 3186 0012 42EA0303 		orr	r3, r2, r3
+ 3187 0016 DAB2     		uxtb	r2, r3
+ 3188 0018 7B68     		ldr	r3, [r7, #4]
+ 3189 001a 1A70     		strb	r2, [r3, #0]
+ 224:../src/chip8/chip8.c **** 
+ 225:../src/chip8/chip8.c **** }
+ 3190              		.loc 1 225 0
+ 3191 001c 07F10C07 		add	r7, r7, #12
+ 3192 0020 BD46     		mov	sp, r7
+ 3193 0022 80BC     		pop	{r7}
+ 3194 0024 7047     		bx	lr
+ 3195              		.cfi_endproc
+ 3196              	.LFE17:
+ 3198 0026 00BF     		.section	.text.math_and,"ax",%progbits
+ 3199              		.align	2
+ 3200              		.thumb
+ 3201              		.thumb_func
+ 3203              	math_and:
+ 3204              	.LFB18:
+ 226:../src/chip8/chip8.c **** static void math_and (byte *reg1,byte reg2) {
+ 3205              		.loc 1 226 0
+ 3206              		.cfi_startproc
+ 3207              		@ args = 0, pretend = 0, frame = 8
+ 3208              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3209              		@ link register save eliminated.
+ 3210 0000 80B4     		push	{r7}
+ 3211              	.LCFI54:
+ 3212              		.cfi_def_cfa_offset 4
+ 3213 0002 83B0     		sub	sp, sp, #12
+ 3214              	.LCFI55:
+ 3215              		.cfi_def_cfa_offset 16
+ 3216 0004 00AF     		add	r7, sp, #0
+ 3217              		.cfi_offset 7, -4
+ 3218              	.LCFI56:
+ 3219              		.cfi_def_cfa_register 7
+ 3220 0006 7860     		str	r0, [r7, #4]
+ 3221 0008 0B46     		mov	r3, r1
+ 3222 000a FB70     		strb	r3, [r7, #3]
+ 227:../src/chip8/chip8.c **** 	*reg1&=reg2;
+ 3223              		.loc 1 227 0
+ 3224 000c 7B68     		ldr	r3, [r7, #4]
+ 3225 000e 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3226 0010 FB78     		ldrb	r3, [r7, #3]
+ 3227 0012 02EA0303 		and	r3, r2, r3
+ 3228 0016 DAB2     		uxtb	r2, r3
+ 3229 0018 7B68     		ldr	r3, [r7, #4]
+ 3230 001a 1A70     		strb	r2, [r3, #0]
+ 228:../src/chip8/chip8.c **** 
+ 229:../src/chip8/chip8.c **** }
+ 3231              		.loc 1 229 0
+ 3232 001c 07F10C07 		add	r7, r7, #12
+ 3233 0020 BD46     		mov	sp, r7
+ 3234 0022 80BC     		pop	{r7}
+ 3235 0024 7047     		bx	lr
+ 3236              		.cfi_endproc
+ 3237              	.LFE18:
+ 3239 0026 00BF     		.section	.text.math_xor,"ax",%progbits
+ 3240              		.align	2
+ 3241              		.thumb
+ 3242              		.thumb_func
+ 3244              	math_xor:
+ 3245              	.LFB19:
+ 230:../src/chip8/chip8.c **** static void math_xor (byte *reg1,byte reg2) {
+ 3246              		.loc 1 230 0
+ 3247              		.cfi_startproc
+ 3248              		@ args = 0, pretend = 0, frame = 8
+ 3249              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3250              		@ link register save eliminated.
+ 3251 0000 80B4     		push	{r7}
+ 3252              	.LCFI57:
+ 3253              		.cfi_def_cfa_offset 4
+ 3254 0002 83B0     		sub	sp, sp, #12
+ 3255              	.LCFI58:
+ 3256              		.cfi_def_cfa_offset 16
+ 3257 0004 00AF     		add	r7, sp, #0
+ 3258              		.cfi_offset 7, -4
+ 3259              	.LCFI59:
+ 3260              		.cfi_def_cfa_register 7
+ 3261 0006 7860     		str	r0, [r7, #4]
+ 3262 0008 0B46     		mov	r3, r1
+ 3263 000a FB70     		strb	r3, [r7, #3]
+ 231:../src/chip8/chip8.c **** 	*reg1^=reg2;
+ 3264              		.loc 1 231 0
+ 3265 000c 7B68     		ldr	r3, [r7, #4]
+ 3266 000e 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3267 0010 FB78     		ldrb	r3, [r7, #3]
+ 3268 0012 82EA0303 		eor	r3, r2, r3
+ 3269 0016 DAB2     		uxtb	r2, r3
+ 3270 0018 7B68     		ldr	r3, [r7, #4]
+ 3271 001a 1A70     		strb	r2, [r3, #0]
+ 232:../src/chip8/chip8.c **** 
+ 233:../src/chip8/chip8.c **** }
+ 3272              		.loc 1 233 0
+ 3273 001c 07F10C07 		add	r7, r7, #12
+ 3274 0020 BD46     		mov	sp, r7
+ 3275 0022 80BC     		pop	{r7}
+ 3276 0024 7047     		bx	lr
+ 3277              		.cfi_endproc
+ 3278              	.LFE19:
+ 3280 0026 00BF     		.section	.text.math_add,"ax",%progbits
+ 3281              		.align	2
+ 3282              		.thumb
+ 3283              		.thumb_func
+ 3285              	math_add:
+ 3286              	.LFB20:
+ 234:../src/chip8/chip8.c **** static void math_add (byte *reg1,byte reg2) {
+ 3287              		.loc 1 234 0
+ 3288              		.cfi_startproc
+ 3289              		@ args = 0, pretend = 0, frame = 16
+ 3290              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3291              		@ link register save eliminated.
+ 3292 0000 80B4     		push	{r7}
+ 3293              	.LCFI60:
+ 3294              		.cfi_def_cfa_offset 4
+ 3295 0002 85B0     		sub	sp, sp, #20
+ 3296              	.LCFI61:
+ 3297              		.cfi_def_cfa_offset 24
+ 3298 0004 00AF     		add	r7, sp, #0
+ 3299              		.cfi_offset 7, -4
+ 3300              	.LCFI62:
+ 3301              		.cfi_def_cfa_register 7
+ 3302 0006 7860     		str	r0, [r7, #4]
+ 3303 0008 0B46     		mov	r3, r1
+ 3304 000a FB70     		strb	r3, [r7, #3]
+ 235:../src/chip8/chip8.c **** 	word tmp;
+ 236:../src/chip8/chip8.c **** 	tmp=*reg1+reg2;
+ 3305              		.loc 1 236 0
+ 3306 000c 7B68     		ldr	r3, [r7, #4]
+ 3307 000e 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3308 0010 1A46     		mov	r2, r3
+ 3309 0012 FB78     		ldrb	r3, [r7, #3]	@ zero_extendqisi2
+ 3310 0014 9BB2     		uxth	r3, r3
+ 3311 0016 D318     		adds	r3, r2, r3
+ 3312 0018 FB81     		strh	r3, [r7, #14]	@ movhi
+ 237:../src/chip8/chip8.c **** 	*reg1=(byte)tmp;
+ 3313              		.loc 1 237 0
+ 3314 001a FB89     		ldrh	r3, [r7, #14]	@ movhi
+ 3315 001c DAB2     		uxtb	r2, r3
+ 3316 001e 7B68     		ldr	r3, [r7, #4]
+ 3317 0020 1A70     		strb	r2, [r3, #0]
+ 238:../src/chip8/chip8.c **** 	chip8_cpu.V[15]=tmp>>8;
+ 3318              		.loc 1 238 0
+ 3319 0022 FB89     		ldrh	r3, [r7, #14]
+ 3320 0024 4FEA1323 		lsr	r3, r3, #8
+ 3321 0028 9BB2     		uxth	r3, r3
+ 3322 002a DAB2     		uxtb	r2, r3
+ 3323 002c 034B     		ldr	r3, .L102
+ 3324 002e DA73     		strb	r2, [r3, #15]
+ 239:../src/chip8/chip8.c **** 
+ 240:../src/chip8/chip8.c **** }
+ 3325              		.loc 1 240 0
+ 3326 0030 07F11407 		add	r7, r7, #20
+ 3327 0034 BD46     		mov	sp, r7
+ 3328 0036 80BC     		pop	{r7}
+ 3329 0038 7047     		bx	lr
+ 3330              	.L103:
+ 3331 003a 00BF     		.align	2
+ 3332              	.L102:
+ 3333 003c 00000000 		.word	chip8_cpu
+ 3334              		.cfi_endproc
+ 3335              	.LFE20:
+ 3337              		.section	.text.math_sub,"ax",%progbits
+ 3338              		.align	2
+ 3339              		.thumb
+ 3340              		.thumb_func
+ 3342              	math_sub:
+ 3343              	.LFB21:
+ 241:../src/chip8/chip8.c **** static void math_sub (byte *reg1,byte reg2) {
+ 3344              		.loc 1 241 0
+ 3345              		.cfi_startproc
+ 3346              		@ args = 0, pretend = 0, frame = 16
+ 3347              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3348              		@ link register save eliminated.
+ 3349 0000 80B4     		push	{r7}
+ 3350              	.LCFI63:
+ 3351              		.cfi_def_cfa_offset 4
+ 3352 0002 85B0     		sub	sp, sp, #20
+ 3353              	.LCFI64:
+ 3354              		.cfi_def_cfa_offset 24
+ 3355 0004 00AF     		add	r7, sp, #0
+ 3356              		.cfi_offset 7, -4
+ 3357              	.LCFI65:
+ 3358              		.cfi_def_cfa_register 7
+ 3359 0006 7860     		str	r0, [r7, #4]
+ 3360 0008 0B46     		mov	r3, r1
+ 3361 000a FB70     		strb	r3, [r7, #3]
+ 242:../src/chip8/chip8.c **** 	word tmp;
+ 243:../src/chip8/chip8.c **** 	tmp=*reg1-reg2;
+ 3362              		.loc 1 243 0
+ 3363 000c 7B68     		ldr	r3, [r7, #4]
+ 3364 000e 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3365 0010 1A46     		mov	r2, r3
+ 3366 0012 FB78     		ldrb	r3, [r7, #3]	@ zero_extendqisi2
+ 3367 0014 9BB2     		uxth	r3, r3
+ 3368 0016 D31A     		subs	r3, r2, r3
+ 3369 0018 FB81     		strh	r3, [r7, #14]	@ movhi
+ 244:../src/chip8/chip8.c **** 	*reg1=(byte)tmp;
+ 3370              		.loc 1 244 0
+ 3371 001a FB89     		ldrh	r3, [r7, #14]	@ movhi
+ 3372 001c DAB2     		uxtb	r2, r3
+ 3373 001e 7B68     		ldr	r3, [r7, #4]
+ 3374 0020 1A70     		strb	r2, [r3, #0]
+ 245:../src/chip8/chip8.c **** 	chip8_cpu.V[15]=((byte)(tmp>>8))+1;
+ 3375              		.loc 1 245 0
+ 3376 0022 FB89     		ldrh	r3, [r7, #14]
+ 3377 0024 4FEA1323 		lsr	r3, r3, #8
+ 3378 0028 9BB2     		uxth	r3, r3
+ 3379 002a DBB2     		uxtb	r3, r3
+ 3380 002c 03F10103 		add	r3, r3, #1
+ 3381 0030 DAB2     		uxtb	r2, r3
+ 3382 0032 034B     		ldr	r3, .L105
+ 3383 0034 DA73     		strb	r2, [r3, #15]
+ 246:../src/chip8/chip8.c **** 
+ 247:../src/chip8/chip8.c **** }
+ 3384              		.loc 1 247 0
+ 3385 0036 07F11407 		add	r7, r7, #20
+ 3386 003a BD46     		mov	sp, r7
+ 3387 003c 80BC     		pop	{r7}
+ 3388 003e 7047     		bx	lr
+ 3389              	.L106:
+ 3390              		.align	2
+ 3391              	.L105:
+ 3392 0040 00000000 		.word	chip8_cpu
+ 3393              		.cfi_endproc
+ 3394              	.LFE21:
+ 3396              		.section	.text.math_shr,"ax",%progbits
+ 3397              		.align	2
+ 3398              		.thumb
+ 3399              		.thumb_func
+ 3401              	math_shr:
+ 3402              	.LFB22:
+ 248:../src/chip8/chip8.c **** static void math_shr (byte *reg1,byte reg2) {
+ 3403              		.loc 1 248 0
+ 3404              		.cfi_startproc
+ 3405              		@ args = 0, pretend = 0, frame = 8
+ 3406              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3407              		@ link register save eliminated.
+ 3408 0000 80B4     		push	{r7}
+ 3409              	.LCFI66:
+ 3410              		.cfi_def_cfa_offset 4
+ 3411 0002 83B0     		sub	sp, sp, #12
+ 3412              	.LCFI67:
+ 3413              		.cfi_def_cfa_offset 16
+ 3414 0004 00AF     		add	r7, sp, #0
+ 3415              		.cfi_offset 7, -4
+ 3416              	.LCFI68:
+ 3417              		.cfi_def_cfa_register 7
+ 3418 0006 7860     		str	r0, [r7, #4]
+ 3419 0008 0B46     		mov	r3, r1
+ 3420 000a FB70     		strb	r3, [r7, #3]
+ 249:../src/chip8/chip8.c **** 	chip8_cpu.V[15]=*reg1&1;
+ 3421              		.loc 1 249 0
+ 3422 000c 7B68     		ldr	r3, [r7, #4]
+ 3423 000e 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3424 0010 03F00103 		and	r3, r3, #1
+ 3425 0014 DAB2     		uxtb	r2, r3
+ 3426 0016 074B     		ldr	r3, .L108
+ 3427 0018 DA73     		strb	r2, [r3, #15]
+ 250:../src/chip8/chip8.c **** 	*reg1>>=1;
+ 3428              		.loc 1 250 0
+ 3429 001a 7B68     		ldr	r3, [r7, #4]
+ 3430 001c 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3431 001e 4FEA5303 		lsr	r3, r3, #1
+ 3432 0022 DAB2     		uxtb	r2, r3
+ 3433 0024 7B68     		ldr	r3, [r7, #4]
+ 3434 0026 1A70     		strb	r2, [r3, #0]
+ 251:../src/chip8/chip8.c **** }
+ 3435              		.loc 1 251 0
+ 3436 0028 07F10C07 		add	r7, r7, #12
+ 3437 002c BD46     		mov	sp, r7
+ 3438 002e 80BC     		pop	{r7}
+ 3439 0030 7047     		bx	lr
+ 3440              	.L109:
+ 3441 0032 00BF     		.align	2
+ 3442              	.L108:
+ 3443 0034 00000000 		.word	chip8_cpu
+ 3444              		.cfi_endproc
+ 3445              	.LFE22:
+ 3447              		.section	.text.math_rsb,"ax",%progbits
+ 3448              		.align	2
+ 3449              		.thumb
+ 3450              		.thumb_func
+ 3452              	math_rsb:
+ 3453              	.LFB23:
+ 252:../src/chip8/chip8.c **** static void math_rsb (byte *reg1,byte reg2) {
+ 3454              		.loc 1 252 0
+ 3455              		.cfi_startproc
+ 3456              		@ args = 0, pretend = 0, frame = 16
+ 3457              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3458              		@ link register save eliminated.
+ 3459 0000 80B4     		push	{r7}
+ 3460              	.LCFI69:
+ 3461              		.cfi_def_cfa_offset 4
+ 3462 0002 85B0     		sub	sp, sp, #20
+ 3463              	.LCFI70:
+ 3464              		.cfi_def_cfa_offset 24
+ 3465 0004 00AF     		add	r7, sp, #0
+ 3466              		.cfi_offset 7, -4
+ 3467              	.LCFI71:
+ 3468              		.cfi_def_cfa_register 7
+ 3469 0006 7860     		str	r0, [r7, #4]
+ 3470 0008 0B46     		mov	r3, r1
+ 3471 000a FB70     		strb	r3, [r7, #3]
+ 253:../src/chip8/chip8.c **** 	word tmp;
+ 254:../src/chip8/chip8.c **** 	tmp=reg2-*reg1;
+ 3472              		.loc 1 254 0
+ 3473 000c FB78     		ldrb	r3, [r7, #3]	@ zero_extendqisi2
+ 3474 000e 9AB2     		uxth	r2, r3
+ 3475 0010 7B68     		ldr	r3, [r7, #4]
+ 3476 0012 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3477 0014 D31A     		subs	r3, r2, r3
+ 3478 0016 FB81     		strh	r3, [r7, #14]	@ movhi
+ 255:../src/chip8/chip8.c **** 	*reg1=(byte)tmp;
+ 3479              		.loc 1 255 0
+ 3480 0018 FB89     		ldrh	r3, [r7, #14]	@ movhi
+ 3481 001a DAB2     		uxtb	r2, r3
+ 3482 001c 7B68     		ldr	r3, [r7, #4]
+ 3483 001e 1A70     		strb	r2, [r3, #0]
+ 256:../src/chip8/chip8.c **** 	chip8_cpu.V[15]=((byte)(tmp>>8))+1;
+ 3484              		.loc 1 256 0
+ 3485 0020 FB89     		ldrh	r3, [r7, #14]
+ 3486 0022 4FEA1323 		lsr	r3, r3, #8
+ 3487 0026 9BB2     		uxth	r3, r3
+ 3488 0028 DBB2     		uxtb	r3, r3
+ 3489 002a 03F10103 		add	r3, r3, #1
+ 3490 002e DAB2     		uxtb	r2, r3
+ 3491 0030 034B     		ldr	r3, .L111
+ 3492 0032 DA73     		strb	r2, [r3, #15]
+ 257:../src/chip8/chip8.c **** }
+ 3493              		.loc 1 257 0
+ 3494 0034 07F11407 		add	r7, r7, #20
+ 3495 0038 BD46     		mov	sp, r7
+ 3496 003a 80BC     		pop	{r7}
+ 3497 003c 7047     		bx	lr
+ 3498              	.L112:
+ 3499 003e 00BF     		.align	2
+ 3500              	.L111:
+ 3501 0040 00000000 		.word	chip8_cpu
+ 3502              		.cfi_endproc
+ 3503              	.LFE23:
+ 3505              		.section	.text.math_nop,"ax",%progbits
+ 3506              		.align	2
+ 3507              		.thumb
+ 3508              		.thumb_func
+ 3510              	math_nop:
+ 3511              	.LFB24:
+ 258:../src/chip8/chip8.c **** static void math_nop (byte *reg1,byte reg2) {
+ 3512              		.loc 1 258 0
+ 3513              		.cfi_startproc
+ 3514              		@ args = 0, pretend = 0, frame = 8
+ 3515              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3516              		@ link register save eliminated.
+ 3517 0000 80B4     		push	{r7}
+ 3518              	.LCFI72:
+ 3519              		.cfi_def_cfa_offset 4
+ 3520 0002 83B0     		sub	sp, sp, #12
+ 3521              	.LCFI73:
+ 3522              		.cfi_def_cfa_offset 16
+ 3523 0004 00AF     		add	r7, sp, #0
+ 3524              		.cfi_offset 7, -4
+ 3525              	.LCFI74:
+ 3526              		.cfi_def_cfa_register 7
+ 3527 0006 7860     		str	r0, [r7, #4]
+ 3528 0008 0B46     		mov	r3, r1
+ 3529 000a FB70     		strb	r3, [r7, #3]
+ 259:../src/chip8/chip8.c **** 
+ 260:../src/chip8/chip8.c **** }
+ 3530              		.loc 1 260 0
+ 3531 000c 07F10C07 		add	r7, r7, #12
+ 3532 0010 BD46     		mov	sp, r7
+ 3533 0012 80BC     		pop	{r7}
+ 3534 0014 7047     		bx	lr
+ 3535              		.cfi_endproc
+ 3536              	.LFE24:
+ 3538 0016 00BF     		.section	.text.math_shl,"ax",%progbits
+ 3539              		.align	2
+ 3540              		.thumb
+ 3541              		.thumb_func
+ 3543              	math_shl:
+ 3544              	.LFB25:
+ 261:../src/chip8/chip8.c **** static void math_shl (byte *reg1,byte reg2) {
+ 3545              		.loc 1 261 0
+ 3546              		.cfi_startproc
+ 3547              		@ args = 0, pretend = 0, frame = 8
+ 3548              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3549              		@ link register save eliminated.
+ 3550 0000 80B4     		push	{r7}
+ 3551              	.LCFI75:
+ 3552              		.cfi_def_cfa_offset 4
+ 3553 0002 83B0     		sub	sp, sp, #12
+ 3554              	.LCFI76:
+ 3555              		.cfi_def_cfa_offset 16
+ 3556 0004 00AF     		add	r7, sp, #0
+ 3557              		.cfi_offset 7, -4
+ 3558              	.LCFI77:
+ 3559              		.cfi_def_cfa_register 7
+ 3560 0006 7860     		str	r0, [r7, #4]
+ 3561 0008 0B46     		mov	r3, r1
+ 3562 000a FB70     		strb	r3, [r7, #3]
+ 262:../src/chip8/chip8.c **** 	chip8_cpu.V[15]=*reg1>>7;
+ 3563              		.loc 1 262 0
+ 3564 000c 7B68     		ldr	r3, [r7, #4]
+ 3565 000e 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3566 0010 4FEAD313 		lsr	r3, r3, #7
+ 3567 0014 DAB2     		uxtb	r2, r3
+ 3568 0016 074B     		ldr	r3, .L115
+ 3569 0018 DA73     		strb	r2, [r3, #15]
+ 263:../src/chip8/chip8.c **** 	*reg1<<=1;
+ 3570              		.loc 1 263 0
+ 3571 001a 7B68     		ldr	r3, [r7, #4]
+ 3572 001c 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3573 001e 4FEA4303 		lsl	r3, r3, #1
+ 3574 0022 DAB2     		uxtb	r2, r3
+ 3575 0024 7B68     		ldr	r3, [r7, #4]
+ 3576 0026 1A70     		strb	r2, [r3, #0]
+ 264:../src/chip8/chip8.c **** }
+ 3577              		.loc 1 264 0
+ 3578 0028 07F10C07 		add	r7, r7, #12
+ 3579 002c BD46     		mov	sp, r7
+ 3580 002e 80BC     		pop	{r7}
+ 3581 0030 7047     		bx	lr
+ 3582              	.L116:
+ 3583 0032 00BF     		.align	2
+ 3584              	.L115:
+ 3585 0034 00000000 		.word	chip8_cpu
+ 3586              		.cfi_endproc
+ 3587              	.LFE25:
+ 3589              		.section	.text.init8,"ax",%progbits
+ 3590              		.align	2
+ 3591              		.global	init8
+ 3592              		.thumb
+ 3593              		.thumb_func
+ 3595              	init8:
+ 3596              	.LFB26:
+ 265:../src/chip8/chip8.c **** 
+ 266:../src/chip8/chip8.c **** 
+ 267:../src/chip8/chip8.c **** void init8() {
+ 3597              		.loc 1 267 0
+ 3598              		.cfi_startproc
+ 3599              		@ args = 0, pretend = 0, frame = 8
+ 3600              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3601              		@ link register save eliminated.
+ 3602 0000 80B4     		push	{r7}
+ 3603              	.LCFI78:
+ 3604              		.cfi_def_cfa_offset 4
+ 3605 0002 83B0     		sub	sp, sp, #12
+ 3606              	.LCFI79:
+ 3607              		.cfi_def_cfa_offset 16
+ 3608 0004 00AF     		add	r7, sp, #0
+ 3609              		.cfi_offset 7, -4
+ 3610              	.LCFI80:
+ 3611              		.cfi_def_cfa_register 7
+ 268:../src/chip8/chip8.c **** 	word i = 0;
+ 3612              		.loc 1 268 0
+ 3613 0006 4FF00003 		mov	r3, #0
+ 3614 000a FB80     		strh	r3, [r7, #6]	@ movhi
+ 269:../src/chip8/chip8.c **** 
+ 270:../src/chip8/chip8.c **** 	// Program counter starts at 0x200 (Start adress program)
+ 271:../src/chip8/chip8.c **** 	chip8_cpu.pc = 0x200;
+ 3615              		.loc 1 271 0
+ 3616 000c 474B     		ldr	r3, .L130
+ 3617 000e 4FF40072 		mov	r2, #512
+ 3618 0012 9A86     		strh	r2, [r3, #52]	@ movhi
+ 272:../src/chip8/chip8.c **** 	chip8_cpu.sp = 0;
+ 3619              		.loc 1 272 0
+ 3620 0014 454B     		ldr	r3, .L130
+ 3621 0016 4FF00002 		mov	r2, #0
+ 3622 001a DA86     		strh	r2, [r3, #54]	@ movhi
+ 273:../src/chip8/chip8.c **** 	chip8_cpu.i = 0;
+ 3623              		.loc 1 273 0
+ 3624 001c 434B     		ldr	r3, .L130
+ 3625 001e 4FF00002 		mov	r2, #0
+ 3626 0022 5A86     		strh	r2, [r3, #50]	@ movhi
+ 274:../src/chip8/chip8.c **** 	chip8_cpu.delay = 0;
+ 3627              		.loc 1 274 0
+ 3628 0024 414B     		ldr	r3, .L130
+ 3629 0026 4FF00002 		mov	r2, #0
+ 3630 002a 83F83020 		strb	r2, [r3, #48]
+ 275:../src/chip8/chip8.c **** 	chip8_cpu.sound =0;
+ 3631              		.loc 1 275 0
+ 3632 002e 3F4B     		ldr	r3, .L130
+ 3633 0030 4FF00002 		mov	r2, #0
+ 3634 0034 83F83120 		strb	r2, [r3, #49]
+ 276:../src/chip8/chip8.c **** 
+ 277:../src/chip8/chip8.c **** 	//Clear display
+ 278:../src/chip8/chip8.c **** 	for(i = 0; i < 2048; ++i)
+ 3635              		.loc 1 278 0
+ 3636 0038 4FF00003 		mov	r3, #0
+ 3637 003c FB80     		strh	r3, [r7, #6]	@ movhi
+ 3638 003e 08E0     		b	.L118
+ 3639              	.L119:
+ 279:../src/chip8/chip8.c **** 		gfx[i] = 0;
+ 3640              		.loc 1 279 0 discriminator 2
+ 3641 0040 FB88     		ldrh	r3, [r7, #6]
+ 3642 0042 3B4A     		ldr	r2, .L130+4
+ 3643 0044 4FF00001 		mov	r1, #0
+ 3644 0048 D154     		strb	r1, [r2, r3]
+ 278:../src/chip8/chip8.c **** 	for(i = 0; i < 2048; ++i)
+ 3645              		.loc 1 278 0 discriminator 2
+ 3646 004a FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 3647 004c 03F10103 		add	r3, r3, #1
+ 3648 0050 FB80     		strh	r3, [r7, #6]	@ movhi
+ 3649              	.L118:
+ 278:../src/chip8/chip8.c **** 	for(i = 0; i < 2048; ++i)
+ 3650              		.loc 1 278 0 is_stmt 0 discriminator 1
+ 3651 0052 FA88     		ldrh	r2, [r7, #6]
+ 3652 0054 40F2FF73 		movw	r3, #2047
+ 3653 0058 9A42     		cmp	r2, r3
+ 3654 005a F1D9     		bls	.L119
+ 280:../src/chip8/chip8.c **** 
+ 281:../src/chip8/chip8.c **** 	//Clear registers
+ 282:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3655              		.loc 1 282 0 is_stmt 1
+ 3656 005c 4FF00003 		mov	r3, #0
+ 3657 0060 FB80     		strh	r3, [r7, #6]	@ movhi
+ 3658 0062 08E0     		b	.L120
+ 3659              	.L121:
+ 283:../src/chip8/chip8.c **** 		chip8_cpu.V[i] = 0;
+ 3660              		.loc 1 283 0 discriminator 2
+ 3661 0064 FB88     		ldrh	r3, [r7, #6]
+ 3662 0066 314A     		ldr	r2, .L130
+ 3663 0068 4FF00001 		mov	r1, #0
+ 3664 006c D154     		strb	r1, [r2, r3]
+ 282:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3665              		.loc 1 282 0 discriminator 2
+ 3666 006e FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 3667 0070 03F10103 		add	r3, r3, #1
+ 3668 0074 FB80     		strh	r3, [r7, #6]	@ movhi
+ 3669              	.L120:
+ 282:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3670              		.loc 1 282 0 is_stmt 0 discriminator 1
+ 3671 0076 FB88     		ldrh	r3, [r7, #6]
+ 3672 0078 0F2B     		cmp	r3, #15
+ 3673 007a F3D9     		bls	.L121
+ 284:../src/chip8/chip8.c **** 
+ 285:../src/chip8/chip8.c **** 	//Clear stack
+ 286:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3674              		.loc 1 286 0 is_stmt 1
+ 3675 007c 4FF00003 		mov	r3, #0
+ 3676 0080 FB80     		strh	r3, [r7, #6]	@ movhi
+ 3677 0082 0BE0     		b	.L122
+ 3678              	.L123:
+ 287:../src/chip8/chip8.c **** 		chip8_cpu.stack[i] = 0;
+ 3679              		.loc 1 287 0 discriminator 2
+ 3680 0084 FA88     		ldrh	r2, [r7, #6]
+ 3681 0086 294B     		ldr	r3, .L130
+ 3682 0088 02F10802 		add	r2, r2, #8
+ 3683 008c 4FF00001 		mov	r1, #0
+ 3684 0090 23F81210 		strh	r1, [r3, r2, lsl #1]	@ movhi
+ 286:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3685              		.loc 1 286 0 discriminator 2
+ 3686 0094 FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 3687 0096 03F10103 		add	r3, r3, #1
+ 3688 009a FB80     		strh	r3, [r7, #6]	@ movhi
+ 3689              	.L122:
+ 286:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3690              		.loc 1 286 0 is_stmt 0 discriminator 1
+ 3691 009c FB88     		ldrh	r3, [r7, #6]
+ 3692 009e 0F2B     		cmp	r3, #15
+ 3693 00a0 F0D9     		bls	.L123
+ 288:../src/chip8/chip8.c **** 
+ 289:../src/chip8/chip8.c **** 	//Clear memory
+ 290:../src/chip8/chip8.c **** 	for(i = 0; i < CHIP8_RAM; ++i)
+ 3694              		.loc 1 290 0 is_stmt 1
+ 3695 00a2 4FF00003 		mov	r3, #0
+ 3696 00a6 FB80     		strh	r3, [r7, #6]	@ movhi
+ 3697 00a8 08E0     		b	.L124
+ 3698              	.L125:
+ 291:../src/chip8/chip8.c **** 		memory[i] = 0;
+ 3699              		.loc 1 291 0 discriminator 2
+ 3700 00aa FB88     		ldrh	r3, [r7, #6]
+ 3701 00ac 214A     		ldr	r2, .L130+8
+ 3702 00ae 4FF00001 		mov	r1, #0
+ 3703 00b2 D154     		strb	r1, [r2, r3]
+ 290:../src/chip8/chip8.c **** 	for(i = 0; i < CHIP8_RAM; ++i)
+ 3704              		.loc 1 290 0 discriminator 2
+ 3705 00b4 FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 3706 00b6 03F10103 		add	r3, r3, #1
+ 3707 00ba FB80     		strh	r3, [r7, #6]	@ movhi
+ 3708              	.L124:
+ 290:../src/chip8/chip8.c **** 	for(i = 0; i < CHIP8_RAM; ++i)
+ 3709              		.loc 1 290 0 is_stmt 0 discriminator 1
+ 3710 00bc FA88     		ldrh	r2, [r7, #6]
+ 3711 00be 40F6FF73 		movw	r3, #4095
+ 3712 00c2 9A42     		cmp	r2, r3
+ 3713 00c4 F1D9     		bls	.L125
+ 292:../src/chip8/chip8.c **** 
+ 293:../src/chip8/chip8.c **** 	//Clear status of key
+ 294:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3714              		.loc 1 294 0 is_stmt 1
+ 3715 00c6 4FF00003 		mov	r3, #0
+ 3716 00ca FB80     		strh	r3, [r7, #6]	@ movhi
+ 3717 00cc 08E0     		b	.L126
+ 3718              	.L127:
+ 295:../src/chip8/chip8.c **** 		key[i] = 0;
+ 3719              		.loc 1 295 0 discriminator 2
+ 3720 00ce FB88     		ldrh	r3, [r7, #6]
+ 3721 00d0 194A     		ldr	r2, .L130+12
+ 3722 00d2 4FF00001 		mov	r1, #0
+ 3723 00d6 D154     		strb	r1, [r2, r3]
+ 294:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3724              		.loc 1 294 0 discriminator 2
+ 3725 00d8 FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 3726 00da 03F10103 		add	r3, r3, #1
+ 3727 00de FB80     		strh	r3, [r7, #6]	@ movhi
+ 3728              	.L126:
+ 294:../src/chip8/chip8.c **** 	for(i = 0; i < 16; ++i)
+ 3729              		.loc 1 294 0 is_stmt 0 discriminator 1
+ 3730 00e0 FB88     		ldrh	r3, [r7, #6]
+ 3731 00e2 0F2B     		cmp	r3, #15
+ 3732 00e4 F3D9     		bls	.L127
+ 296:../src/chip8/chip8.c **** 
+ 297:../src/chip8/chip8.c **** 	// Write font to memory
+ 298:../src/chip8/chip8.c **** 	for(i = 0; i < 80; ++i)
+ 3733              		.loc 1 298 0 is_stmt 1
+ 3734 00e6 4FF00003 		mov	r3, #0
+ 3735 00ea FB80     		strh	r3, [r7, #6]	@ movhi
+ 3736 00ec 0DE0     		b	.L128
+ 3737              	.L129:
+ 299:../src/chip8/chip8.c **** 		write_mem(i,chip8_fontset[i]);
+ 3738              		.loc 1 299 0 discriminator 2
+ 3739 00ee FB88     		ldrh	r3, [r7, #6]
+ 3740 00f0 4FEA0353 		lsl	r3, r3, #20
+ 3741 00f4 4FEA1353 		lsr	r3, r3, #20
+ 3742 00f8 FA88     		ldrh	r2, [r7, #6]
+ 3743 00fa 1049     		ldr	r1, .L130+16
+ 3744 00fc 895C     		ldrb	r1, [r1, r2]	@ zero_extendqisi2
+ 3745 00fe 0D4A     		ldr	r2, .L130+8
+ 3746 0100 D154     		strb	r1, [r2, r3]
+ 298:../src/chip8/chip8.c **** 	for(i = 0; i < 80; ++i)
+ 3747              		.loc 1 298 0 discriminator 2
+ 3748 0102 FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 3749 0104 03F10103 		add	r3, r3, #1
+ 3750 0108 FB80     		strh	r3, [r7, #6]	@ movhi
+ 3751              	.L128:
+ 298:../src/chip8/chip8.c **** 	for(i = 0; i < 80; ++i)
+ 3752              		.loc 1 298 0 is_stmt 0 discriminator 1
+ 3753 010a FB88     		ldrh	r3, [r7, #6]
+ 3754 010c 4F2B     		cmp	r3, #79
+ 3755 010e EED9     		bls	.L129
+ 300:../src/chip8/chip8.c **** 
+ 301:../src/chip8/chip8.c **** 	running=1;
+ 3756              		.loc 1 301 0 is_stmt 1
+ 3757 0110 0B4B     		ldr	r3, .L130+20
+ 3758 0112 4FF00102 		mov	r2, #1
+ 3759 0116 1A70     		strb	r2, [r3, #0]
+ 302:../src/chip8/chip8.c **** 	drawFlag = true;
+ 3760              		.loc 1 302 0
+ 3761 0118 0A4B     		ldr	r3, .L130+24
+ 3762 011a 4FF00102 		mov	r2, #1
+ 3763 011e 1A70     		strb	r2, [r3, #0]
+ 303:../src/chip8/chip8.c **** 
+ 304:../src/chip8/chip8.c **** 	//while (running) emulateCycle();
+ 305:../src/chip8/chip8.c **** 
+ 306:../src/chip8/chip8.c **** }
+ 3764              		.loc 1 306 0
+ 3765 0120 07F10C07 		add	r7, r7, #12
+ 3766 0124 BD46     		mov	sp, r7
+ 3767 0126 80BC     		pop	{r7}
+ 3768 0128 7047     		bx	lr
+ 3769              	.L131:
+ 3770 012a 00BF     		.align	2
+ 3771              	.L130:
+ 3772 012c 00000000 		.word	chip8_cpu
+ 3773 0130 00000000 		.word	gfx
+ 3774 0134 00000000 		.word	memory
+ 3775 0138 00000000 		.word	key
+ 3776 013c 00000000 		.word	chip8_fontset
+ 3777 0140 00000000 		.word	running
+ 3778 0144 00000000 		.word	drawFlag
+ 3779              		.cfi_endproc
+ 3780              	.LFE26:
+ 3782              		.section	.data.math_opcodes,"aw",%progbits
+ 3783              		.align	2
+ 3786              	math_opcodes:
+ 3787 0000 00000000 		.word	math_mov
+ 3788 0004 00000000 		.word	math_or
+ 3789 0008 00000000 		.word	math_and
+ 3790 000c 00000000 		.word	math_xor
+ 3791 0010 00000000 		.word	math_add
+ 3792 0014 00000000 		.word	math_sub
+ 3793 0018 00000000 		.word	math_shr
+ 3794 001c 00000000 		.word	math_rsb
+ 3795 0020 00000000 		.word	math_nop
+ 3796 0024 00000000 		.word	math_nop
+ 3797 0028 00000000 		.word	math_nop
+ 3798 002c 00000000 		.word	math_nop
+ 3799 0030 00000000 		.word	math_nop
+ 3800 0034 00000000 		.word	math_nop
+ 3801 0038 00000000 		.word	math_shl
+ 3802 003c 00000000 		.word	math_nop
+ 3803              		.section	.text.op_math,"ax",%progbits
+ 3804              		.align	2
+ 3805              		.thumb
+ 3806              		.thumb_func
+ 3808              	op_math:
+ 3809              	.LFB27:
+ 307:../src/chip8/chip8.c **** 
+ 308:../src/chip8/chip8.c **** static math_fn math_opcodes[16]=
+ 309:../src/chip8/chip8.c **** {
+ 310:../src/chip8/chip8.c ****  math_mov,
+ 311:../src/chip8/chip8.c ****  math_or,
+ 312:../src/chip8/chip8.c ****  math_and,
+ 313:../src/chip8/chip8.c ****  math_xor,
+ 314:../src/chip8/chip8.c ****  math_add,
+ 315:../src/chip8/chip8.c ****  math_sub,
+ 316:../src/chip8/chip8.c ****  math_shr,
+ 317:../src/chip8/chip8.c ****  math_rsb,
+ 318:../src/chip8/chip8.c ****  math_nop,
+ 319:../src/chip8/chip8.c ****  math_nop,
+ 320:../src/chip8/chip8.c ****  math_nop,
+ 321:../src/chip8/chip8.c ****  math_nop,
+ 322:../src/chip8/chip8.c ****  math_nop,
+ 323:../src/chip8/chip8.c ****  math_nop,
+ 324:../src/chip8/chip8.c ****  math_shl,
+ 325:../src/chip8/chip8.c ****  math_nop
+ 326:../src/chip8/chip8.c **** };
+ 327:../src/chip8/chip8.c **** 
+ 328:../src/chip8/chip8.c **** 
+ 329:../src/chip8/chip8.c **** static void op_math (word opcode)
+ 330:../src/chip8/chip8.c **** {
+ 3810              		.loc 1 330 0
+ 3811              		.cfi_startproc
+ 3812              		@ args = 0, pretend = 0, frame = 8
+ 3813              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3814 0000 80B5     		push	{r7, lr}
+ 3815              	.LCFI81:
+ 3816              		.cfi_def_cfa_offset 8
+ 3817 0002 82B0     		sub	sp, sp, #8
+ 3818              	.LCFI82:
+ 3819              		.cfi_def_cfa_offset 16
+ 3820 0004 00AF     		add	r7, sp, #0
+ 3821              		.cfi_offset 14, -4
+ 3822              		.cfi_offset 7, -8
+ 3823              	.LCFI83:
+ 3824              		.cfi_def_cfa_register 7
+ 3825 0006 0346     		mov	r3, r0
+ 3826 0008 FB80     		strh	r3, [r7, #6]	@ movhi
+ 331:../src/chip8/chip8.c ****  (*(math_opcodes[opcode&0x0f]))
+ 3827              		.loc 1 331 0
+ 3828 000a FB88     		ldrh	r3, [r7, #6]
+ 3829 000c 03F00F02 		and	r2, r3, #15
+ 332:../src/chip8/chip8.c ****         (get_reg_offset(opcode),get_reg_value_2(opcode));
+ 3830              		.loc 1 332 0
+ 3831 0010 0C4B     		ldr	r3, .L133
+ 3832 0012 53F82230 		ldr	r3, [r3, r2, lsl #2]
+ 3833 0016 FA88     		ldrh	r2, [r7, #6]
+ 3834 0018 4FEA1222 		lsr	r2, r2, #8
+ 3835 001c 92B2     		uxth	r2, r2
+ 3836 001e 1146     		mov	r1, r2
+ 3837 0020 094A     		ldr	r2, .L133+4
+ 3838 0022 8918     		adds	r1, r1, r2
+ 3839 0024 FA88     		ldrh	r2, [r7, #6]
+ 3840 0026 4FEA1212 		lsr	r2, r2, #4
+ 3841 002a 92B2     		uxth	r2, r2
+ 3842 002c 02F00F00 		and	r0, r2, #15
+ 3843 0030 054A     		ldr	r2, .L133+4
+ 3844 0032 8218     		adds	r2, r0, r2
+ 3845 0034 1278     		ldrb	r2, [r2, #0]	@ zero_extendqisi2
+ 3846 0036 0846     		mov	r0, r1
+ 3847 0038 1146     		mov	r1, r2
+ 3848 003a 9847     		blx	r3
+ 333:../src/chip8/chip8.c **** }
+ 3849              		.loc 1 333 0
+ 3850 003c 07F10807 		add	r7, r7, #8
+ 3851 0040 BD46     		mov	sp, r7
+ 3852 0042 80BD     		pop	{r7, pc}
+ 3853              	.L134:
+ 3854              		.align	2
+ 3855              	.L133:
+ 3856 0044 00000000 		.word	math_opcodes
+ 3857 0048 00000000 		.word	chip8_cpu
+ 3858              		.cfi_endproc
+ 3859              	.LFE27:
+ 3861              		.section	.data.main_opcodes,"aw",%progbits
+ 3862              		.align	2
+ 3865              	main_opcodes:
+ 3866 0000 00000000 		.word	op_system
+ 3867 0004 00000000 		.word	op_jmp
+ 3868 0008 00000000 		.word	op_call
+ 3869 000c 00000000 		.word	op_skeq_const
+ 3870 0010 00000000 		.word	op_skne_const
+ 3871 0014 00000000 		.word	op_skeq_reg
+ 3872 0018 00000000 		.word	op_mov_const
+ 3873 001c 00000000 		.word	op_add_const
+ 3874 0020 00000000 		.word	op_math
+ 3875 0024 00000000 		.word	op_skne_reg
+ 3876 0028 00000000 		.word	op_mvi
+ 3877 002c 00000000 		.word	op_jmi
+ 3878 0030 00000000 		.word	op_rand
+ 3879 0034 00000000 		.word	op_sprite
+ 3880 0038 00000000 		.word	op_key
+ 3881 003c 00000000 		.word	op_misc
+ 3882              		.section	.text.emulateCycle,"ax",%progbits
+ 3883              		.align	2
+ 3884              		.global	emulateCycle
+ 3885              		.thumb
+ 3886              		.thumb_func
+ 3888              	emulateCycle:
+ 3889              	.LFB28:
+ 334:../src/chip8/chip8.c **** 
+ 335:../src/chip8/chip8.c **** static opcode_fn main_opcodes[16]=
+ 336:../src/chip8/chip8.c **** {
+ 337:../src/chip8/chip8.c **** 		 op_system,
+ 338:../src/chip8/chip8.c **** 		 op_jmp,
+ 339:../src/chip8/chip8.c **** 		 op_call,
+ 340:../src/chip8/chip8.c **** 		 op_skeq_const,
+ 341:../src/chip8/chip8.c **** 		 op_skne_const,
+ 342:../src/chip8/chip8.c **** 		 op_skeq_reg,
+ 343:../src/chip8/chip8.c **** 		 op_mov_const,
+ 344:../src/chip8/chip8.c **** 		 op_add_const,
+ 345:../src/chip8/chip8.c **** 		 op_math,
+ 346:../src/chip8/chip8.c **** 		 op_skne_reg,
+ 347:../src/chip8/chip8.c **** 		 op_mvi,
+ 348:../src/chip8/chip8.c **** 		 op_jmi,
+ 349:../src/chip8/chip8.c **** 		 op_rand,
+ 350:../src/chip8/chip8.c **** 		 op_sprite,
+ 351:../src/chip8/chip8.c **** 		 op_key,
+ 352:../src/chip8/chip8.c **** 		 op_misc
+ 353:../src/chip8/chip8.c **** };
+ 354:../src/chip8/chip8.c **** 
+ 355:../src/chip8/chip8.c **** 
+ 356:../src/chip8/chip8.c **** void emulateCycle() {
+ 3890              		.loc 1 356 0
+ 3891              		.cfi_startproc
+ 3892              		@ args = 0, pretend = 0, frame = 8
+ 3893              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3894 0000 80B5     		push	{r7, lr}
+ 3895              	.LCFI84:
+ 3896              		.cfi_def_cfa_offset 8
+ 3897 0002 82B0     		sub	sp, sp, #8
+ 3898              	.LCFI85:
+ 3899              		.cfi_def_cfa_offset 16
+ 3900 0004 00AF     		add	r7, sp, #0
+ 3901              		.cfi_offset 14, -4
+ 3902              		.cfi_offset 7, -8
+ 3903              	.LCFI86:
+ 3904              		.cfi_def_cfa_register 7
+ 357:../src/chip8/chip8.c **** 	word opcode;
+ 358:../src/chip8/chip8.c **** 	byte i;
+ 359:../src/chip8/chip8.c **** 	for (i=30;i;--i) {
+ 3905              		.loc 1 359 0
+ 3906 0006 4FF01E03 		mov	r3, #30
+ 3907 000a FB71     		strb	r3, [r7, #7]
+ 3908 000c 31E0     		b	.L136
+ 3909              	.L137:
+ 360:../src/chip8/chip8.c **** 	opcode=(read_mem(chip8_cpu.pc)<<8)+read_mem(chip8_cpu.pc+1);
+ 3910              		.loc 1 360 0 discriminator 2
+ 3911 000e 2F4B     		ldr	r3, .L141
+ 3912 0010 9B8E     		ldrh	r3, [r3, #52]
+ 3913 0012 4FEA0353 		lsl	r3, r3, #20
+ 3914 0016 4FEA1353 		lsr	r3, r3, #20
+ 3915 001a 2D4A     		ldr	r2, .L141+4
+ 3916 001c D35C     		ldrb	r3, [r2, r3]	@ zero_extendqisi2
+ 3917 001e 4FEA0323 		lsl	r3, r3, #8
+ 3918 0022 9AB2     		uxth	r2, r3
+ 3919 0024 294B     		ldr	r3, .L141
+ 3920 0026 9B8E     		ldrh	r3, [r3, #52]
+ 3921 0028 03F10103 		add	r3, r3, #1
+ 3922 002c 4FEA0353 		lsl	r3, r3, #20
+ 3923 0030 4FEA1353 		lsr	r3, r3, #20
+ 3924 0034 2649     		ldr	r1, .L141+4
+ 3925 0036 CB5C     		ldrb	r3, [r1, r3]	@ zero_extendqisi2
+ 3926 0038 D318     		adds	r3, r2, r3
+ 3927 003a BB80     		strh	r3, [r7, #4]	@ movhi
+ 361:../src/chip8/chip8.c **** 	chip8_cpu.pc+=2;
+ 3928              		.loc 1 361 0 discriminator 2
+ 3929 003c 234B     		ldr	r3, .L141
+ 3930 003e 9B8E     		ldrh	r3, [r3, #52]
+ 3931 0040 03F10203 		add	r3, r3, #2
+ 3932 0044 9AB2     		uxth	r2, r3
+ 3933 0046 214B     		ldr	r3, .L141
+ 3934 0048 9A86     		strh	r2, [r3, #52]	@ movhi
+ 362:../src/chip8/chip8.c **** 	(*(main_opcodes[opcode>>12]))(opcode&0x0fff);
+ 3935              		.loc 1 362 0 discriminator 2
+ 3936 004a BB88     		ldrh	r3, [r7, #4]
+ 3937 004c 4FEA1333 		lsr	r3, r3, #12
+ 3938 0050 9BB2     		uxth	r3, r3
+ 3939 0052 1A46     		mov	r2, r3
+ 3940 0054 1F4B     		ldr	r3, .L141+8
+ 3941 0056 53F82220 		ldr	r2, [r3, r2, lsl #2]
+ 3942 005a BB88     		ldrh	r3, [r7, #4]	@ movhi
+ 3943 005c 4FEA0353 		lsl	r3, r3, #20
+ 3944 0060 4FEA1353 		lsr	r3, r3, #20
+ 3945 0064 9BB2     		uxth	r3, r3
+ 3946 0066 1846     		mov	r0, r3
+ 3947 0068 9047     		blx	r2
+ 359:../src/chip8/chip8.c **** 	for (i=30;i;--i) {
+ 3948              		.loc 1 359 0 discriminator 2
+ 3949 006a FB79     		ldrb	r3, [r7, #7]
+ 3950 006c 03F1FF33 		add	r3, r3, #-1
+ 3951 0070 FB71     		strb	r3, [r7, #7]
+ 3952              	.L136:
+ 359:../src/chip8/chip8.c **** 	for (i=30;i;--i) {
+ 3953              		.loc 1 359 0 is_stmt 0 discriminator 1
+ 3954 0072 FB79     		ldrb	r3, [r7, #7]	@ zero_extendqisi2
+ 3955 0074 002B     		cmp	r3, #0
+ 3956 0076 CAD1     		bne	.L137
+ 363:../src/chip8/chip8.c **** 
+ 364:../src/chip8/chip8.c **** 	}
+ 365:../src/chip8/chip8.c **** 	if(chip8_cpu.delay > 0)
+ 3957              		.loc 1 365 0 is_stmt 1
+ 3958 0078 144B     		ldr	r3, .L141
+ 3959 007a 93F83030 		ldrb	r3, [r3, #48]	@ zero_extendqisi2
+ 3960 007e 002B     		cmp	r3, #0
+ 3961 0080 08D0     		beq	.L138
+ 366:../src/chip8/chip8.c **** 		--chip8_cpu.delay;
+ 3962              		.loc 1 366 0
+ 3963 0082 124B     		ldr	r3, .L141
+ 3964 0084 93F83030 		ldrb	r3, [r3, #48]	@ zero_extendqisi2
+ 3965 0088 03F1FF33 		add	r3, r3, #-1
+ 3966 008c DAB2     		uxtb	r2, r3
+ 3967 008e 0F4B     		ldr	r3, .L141
+ 3968 0090 83F83020 		strb	r2, [r3, #48]
+ 3969              	.L138:
+ 367:../src/chip8/chip8.c **** 
+ 368:../src/chip8/chip8.c **** 	if(chip8_cpu.sound > 0)
+ 3970              		.loc 1 368 0
+ 3971 0094 0D4B     		ldr	r3, .L141
+ 3972 0096 93F83130 		ldrb	r3, [r3, #49]	@ zero_extendqisi2
+ 3973 009a 002B     		cmp	r3, #0
+ 3974 009c 11D0     		beq	.L135
+ 369:../src/chip8/chip8.c **** 	{
+ 370:../src/chip8/chip8.c **** 		if(chip8_cpu.sound == 1)
+ 3975              		.loc 1 370 0
+ 3976 009e 0B4B     		ldr	r3, .L141
+ 3977 00a0 93F83130 		ldrb	r3, [r3, #49]	@ zero_extendqisi2
+ 3978 00a4 012B     		cmp	r3, #1
+ 3979 00a6 03D1     		bne	.L140
+ 371:../src/chip8/chip8.c **** 			beep = true;
+ 3980              		.loc 1 371 0
+ 3981 00a8 0B4B     		ldr	r3, .L141+12
+ 3982 00aa 4FF00102 		mov	r2, #1
+ 3983 00ae 1A70     		strb	r2, [r3, #0]
+ 3984              	.L140:
+ 372:../src/chip8/chip8.c **** 
+ 373:../src/chip8/chip8.c **** 		--chip8_cpu.sound;
+ 3985              		.loc 1 373 0
+ 3986 00b0 064B     		ldr	r3, .L141
+ 3987 00b2 93F83130 		ldrb	r3, [r3, #49]	@ zero_extendqisi2
+ 3988 00b6 03F1FF33 		add	r3, r3, #-1
+ 3989 00ba DAB2     		uxtb	r2, r3
+ 3990 00bc 034B     		ldr	r3, .L141
+ 3991 00be 83F83120 		strb	r2, [r3, #49]
+ 3992              	.L135:
+ 374:../src/chip8/chip8.c **** 	}
+ 375:../src/chip8/chip8.c **** }
+ 3993              		.loc 1 375 0
+ 3994 00c2 07F10807 		add	r7, r7, #8
+ 3995 00c6 BD46     		mov	sp, r7
+ 3996 00c8 80BD     		pop	{r7, pc}
+ 3997              	.L142:
+ 3998 00ca 00BF     		.align	2
+ 3999              	.L141:
+ 4000 00cc 00000000 		.word	chip8_cpu
+ 4001 00d0 00000000 		.word	memory
+ 4002 00d4 00000000 		.word	main_opcodes
+ 4003 00d8 00000000 		.word	beep
+ 4004              		.cfi_endproc
+ 4005              	.LFE28:
+ 4007              		.section	.text.loadApplication,"ax",%progbits
+ 4008              		.align	2
+ 4009              		.global	loadApplication
+ 4010              		.thumb
+ 4011              		.thumb_func
+ 4013              	loadApplication:
+ 4014              	.LFB29:
+ 376:../src/chip8/chip8.c **** 
+ 377:../src/chip8/chip8.c **** 
+ 378:../src/chip8/chip8.c **** 
+ 379:../src/chip8/chip8.c **** void loadApplication(const byte *programData, word len) {
+ 4015              		.loc 1 379 0
+ 4016              		.cfi_startproc
+ 4017              		@ args = 0, pretend = 0, frame = 8
+ 4018              		@ frame_needed = 1, uses_anonymous_args = 0
+ 4019 0000 80B5     		push	{r7, lr}
+ 4020              	.LCFI87:
+ 4021              		.cfi_def_cfa_offset 8
+ 4022 0002 82B0     		sub	sp, sp, #8
+ 4023              	.LCFI88:
+ 4024              		.cfi_def_cfa_offset 16
+ 4025 0004 00AF     		add	r7, sp, #0
+ 4026              		.cfi_offset 14, -4
+ 4027              		.cfi_offset 7, -8
+ 4028              	.LCFI89:
+ 4029              		.cfi_def_cfa_register 7
+ 4030 0006 7860     		str	r0, [r7, #4]
+ 4031 0008 0B46     		mov	r3, r1
+ 4032 000a 7B80     		strh	r3, [r7, #2]	@ movhi
+ 380:../src/chip8/chip8.c **** 	//byte i;
+ 381:../src/chip8/chip8.c **** 	//FLASH_Unlock();
+ 382:../src/chip8/chip8.c **** 	memcpy(memory+512, programData, len);
+ 4033              		.loc 1 382 0
+ 4034 000c 054A     		ldr	r2, .L144
+ 4035 000e 7B88     		ldrh	r3, [r7, #2]
+ 4036 0010 1046     		mov	r0, r2
+ 4037 0012 7968     		ldr	r1, [r7, #4]
+ 4038 0014 1A46     		mov	r2, r3
+ 4039 0016 FFF7FEFF 		bl	memcpy
+ 383:../src/chip8/chip8.c **** /*	word i;
+ 384:../src/chip8/chip8.c **** 
+ 385:../src/chip8/chip8.c **** 	for (i=0; i<len; ++i, ++programData) {
+ 386:../src/chip8/chip8.c **** 		write_mem(512+i,pgm_read_byte( programData ));
+ 387:../src/chip8/chip8.c **** 
+ 388:../src/chip8/chip8.c **** 	}*/
+ 389:../src/chip8/chip8.c **** 	/*for ( c = pgm_read_byte( programData ), i=0; c; ++programData, c = pgm_read_byte( programData ),
+ 390:../src/chip8/chip8.c **** 		write_mem(512+i,c);
+ 391:../src/chip8/chip8.c **** 
+ 392:../src/chip8/chip8.c **** 	}*/
+ 393:../src/chip8/chip8.c **** 
+ 394:../src/chip8/chip8.c **** 
+ 395:../src/chip8/chip8.c **** }
+ 4040              		.loc 1 395 0
+ 4041 001a 07F10807 		add	r7, r7, #8
+ 4042 001e BD46     		mov	sp, r7
+ 4043 0020 80BD     		pop	{r7, pc}
+ 4044              	.L145:
+ 4045 0022 00BF     		.align	2
+ 4046              	.L144:
+ 4047 0024 00020000 		.word	memory+512
+ 4048              		.cfi_endproc
+ 4049              	.LFE29:
+ 4051              		.section	.data.x.4299,"aw",%progbits
+ 4052              		.align	2
+ 4055              	x.4299:
+ 4056 0000 15CD5B07 		.word	123456789
+ 4057              		.section	.data.y.4300,"aw",%progbits
+ 4058              		.align	2
+ 4061              	y.4300:
+ 4062 0000 E5559A15 		.word	362436069
+ 4063              		.section	.data.z.4301,"aw",%progbits
+ 4064              		.align	2
+ 4067              	z.4301:
+ 4068 0000 B53B121F 		.word	521288629
+ 4069              		.section	.data.w.4302,"aw",%progbits
+ 4070              		.align	2
+ 4073              	w.4302:
+ 4074 0000 33134905 		.word	88675123
+ 4075              		.text
+ 4076              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 chip8.c
+     /tmp/ccBNXkdn.s:1660   .rodata.chip8_fontset:00000000 $d
+     /tmp/ccBNXkdn.s:1663   .rodata.chip8_fontset:00000000 chip8_fontset
+                            *COM*:00000038 chip8_cpu
+                            *COM*:00001000 memory
+                            *COM*:00000800 gfx
+                            *COM*:00000010 key
+                            *COM*:00000001 running
+                            *COM*:00000001 drawFlag
+                            *COM*:00000001 beep
+     /tmp/ccBNXkdn.s:1756   .data.m_w:00000000 m_w
+     /tmp/ccBNXkdn.s:1753   .data.m_w:00000000 $d
+     /tmp/ccBNXkdn.s:1763   .data.m_z:00000000 m_z
+     /tmp/ccBNXkdn.s:1760   .data.m_z:00000000 $d
+     /tmp/ccBNXkdn.s:1766   .text.xor128:00000000 $t
+     /tmp/ccBNXkdn.s:1771   .text.xor128:00000000 xor128
+     /tmp/ccBNXkdn.s:1834   .text.xor128:00000060 $d
+     /tmp/ccBNXkdn.s:4055   .data.x.4299:00000000 x.4299
+     /tmp/ccBNXkdn.s:4061   .data.y.4300:00000000 y.4300
+     /tmp/ccBNXkdn.s:4067   .data.z.4301:00000000 z.4301
+     /tmp/ccBNXkdn.s:4073   .data.w.4302:00000000 w.4302
+     /tmp/ccBNXkdn.s:1842   .text.op_system:00000000 $t
+     /tmp/ccBNXkdn.s:1846   .text.op_system:00000000 op_system
+     /tmp/ccBNXkdn.s:1930   .text.op_system:00000074 $d
+     /tmp/ccBNXkdn.s:1937   .text.op_jmp:00000000 $t
+     /tmp/ccBNXkdn.s:1941   .text.op_jmp:00000000 op_jmp
+     /tmp/ccBNXkdn.s:1972   .text.op_jmp:0000001c $d
+     /tmp/ccBNXkdn.s:1977   .text.op_call:00000000 $t
+     /tmp/ccBNXkdn.s:1981   .text.op_call:00000000 op_call
+     /tmp/ccBNXkdn.s:2031   .text.op_call:00000048 $d
+     /tmp/ccBNXkdn.s:2036   .text.op_skeq_const:00000000 $t
+     /tmp/ccBNXkdn.s:2040   .text.op_skeq_const:00000000 op_skeq_const
+     /tmp/ccBNXkdn.s:2088   .text.op_skeq_const:00000040 $d
+     /tmp/ccBNXkdn.s:2093   .text.op_skne_const:00000000 $t
+     /tmp/ccBNXkdn.s:2097   .text.op_skne_const:00000000 op_skne_const
+     /tmp/ccBNXkdn.s:2145   .text.op_skne_const:00000040 $d
+     /tmp/ccBNXkdn.s:2150   .text.op_skeq_reg:00000000 $t
+     /tmp/ccBNXkdn.s:2154   .text.op_skeq_reg:00000000 op_skeq_reg
+     /tmp/ccBNXkdn.s:2206   .text.op_skeq_reg:00000048 $d
+     /tmp/ccBNXkdn.s:2211   .text.op_mov_const:00000000 $t
+     /tmp/ccBNXkdn.s:2215   .text.op_mov_const:00000000 op_mov_const
+     /tmp/ccBNXkdn.s:2252   .text.op_mov_const:00000028 $d
+     /tmp/ccBNXkdn.s:2257   .text.op_add_const:00000000 $t
+     /tmp/ccBNXkdn.s:2261   .text.op_add_const:00000000 op_add_const
+     /tmp/ccBNXkdn.s:2307   .text.op_add_const:0000003c $d
+     /tmp/ccBNXkdn.s:2312   .text.op_skne_reg:00000000 $t
+     /tmp/ccBNXkdn.s:2316   .text.op_skne_reg:00000000 op_skne_reg
+     /tmp/ccBNXkdn.s:2368   .text.op_skne_reg:00000048 $d
+     /tmp/ccBNXkdn.s:2373   .text.op_mvi:00000000 $t
+     /tmp/ccBNXkdn.s:2377   .text.op_mvi:00000000 op_mvi
+     /tmp/ccBNXkdn.s:2408   .text.op_mvi:0000001c $d
+     /tmp/ccBNXkdn.s:2413   .text.op_jmi:00000000 $t
+     /tmp/ccBNXkdn.s:2417   .text.op_jmi:00000000 op_jmi
+     /tmp/ccBNXkdn.s:2453   .text.op_jmi:00000024 $d
+     /tmp/ccBNXkdn.s:2458   .text.op_rand:00000000 $t
+     /tmp/ccBNXkdn.s:2462   .text.op_rand:00000000 op_rand
+     /tmp/ccBNXkdn.s:2504   .text.op_rand:00000034 $d
+     /tmp/ccBNXkdn.s:2509   .text.op_sprite:00000000 $t
+     /tmp/ccBNXkdn.s:2513   .text.op_sprite:00000000 op_sprite
+     /tmp/ccBNXkdn.s:2663   .text.op_sprite:00000108 $d
+     /tmp/ccBNXkdn.s:2671   .text.op_key:00000000 $t
+     /tmp/ccBNXkdn.s:2675   .text.op_key:00000000 op_key
+     /tmp/ccBNXkdn.s:2757   .text.op_key:00000078 $d
+     /tmp/ccBNXkdn.s:2763   .text.op_misc:00000000 $t
+     /tmp/ccBNXkdn.s:2767   .text.op_misc:00000000 op_misc
+     /tmp/ccBNXkdn.s:3059   .text.op_misc:000001fc $d
+     /tmp/ccBNXkdn.s:3064   .text.op_misc:00000208 $t
+     /tmp/ccBNXkdn.s:3115   .text.op_misc:00000264 $d
+     /tmp/ccBNXkdn.s:3121   .text.math_mov:00000000 $t
+     /tmp/ccBNXkdn.s:3125   .text.math_mov:00000000 math_mov
+     /tmp/ccBNXkdn.s:3158   .text.math_or:00000000 $t
+     /tmp/ccBNXkdn.s:3162   .text.math_or:00000000 math_or
+     /tmp/ccBNXkdn.s:3199   .text.math_and:00000000 $t
+     /tmp/ccBNXkdn.s:3203   .text.math_and:00000000 math_and
+     /tmp/ccBNXkdn.s:3240   .text.math_xor:00000000 $t
+     /tmp/ccBNXkdn.s:3244   .text.math_xor:00000000 math_xor
+     /tmp/ccBNXkdn.s:3281   .text.math_add:00000000 $t
+     /tmp/ccBNXkdn.s:3285   .text.math_add:00000000 math_add
+     /tmp/ccBNXkdn.s:3333   .text.math_add:0000003c $d
+     /tmp/ccBNXkdn.s:3338   .text.math_sub:00000000 $t
+     /tmp/ccBNXkdn.s:3342   .text.math_sub:00000000 math_sub
+     /tmp/ccBNXkdn.s:3392   .text.math_sub:00000040 $d
+     /tmp/ccBNXkdn.s:3397   .text.math_shr:00000000 $t
+     /tmp/ccBNXkdn.s:3401   .text.math_shr:00000000 math_shr
+     /tmp/ccBNXkdn.s:3443   .text.math_shr:00000034 $d
+     /tmp/ccBNXkdn.s:3448   .text.math_rsb:00000000 $t
+     /tmp/ccBNXkdn.s:3452   .text.math_rsb:00000000 math_rsb
+     /tmp/ccBNXkdn.s:3501   .text.math_rsb:00000040 $d
+     /tmp/ccBNXkdn.s:3506   .text.math_nop:00000000 $t
+     /tmp/ccBNXkdn.s:3510   .text.math_nop:00000000 math_nop
+     /tmp/ccBNXkdn.s:3539   .text.math_shl:00000000 $t
+     /tmp/ccBNXkdn.s:3543   .text.math_shl:00000000 math_shl
+     /tmp/ccBNXkdn.s:3585   .text.math_shl:00000034 $d
+     /tmp/ccBNXkdn.s:3590   .text.init8:00000000 $t
+     /tmp/ccBNXkdn.s:3595   .text.init8:00000000 init8
+     /tmp/ccBNXkdn.s:3772   .text.init8:0000012c $d
+     /tmp/ccBNXkdn.s:3783   .data.math_opcodes:00000000 $d
+     /tmp/ccBNXkdn.s:3786   .data.math_opcodes:00000000 math_opcodes
+     /tmp/ccBNXkdn.s:3804   .text.op_math:00000000 $t
+     /tmp/ccBNXkdn.s:3808   .text.op_math:00000000 op_math
+     /tmp/ccBNXkdn.s:3856   .text.op_math:00000044 $d
+     /tmp/ccBNXkdn.s:3862   .data.main_opcodes:00000000 $d
+     /tmp/ccBNXkdn.s:3865   .data.main_opcodes:00000000 main_opcodes
+     /tmp/ccBNXkdn.s:3883   .text.emulateCycle:00000000 $t
+     /tmp/ccBNXkdn.s:3888   .text.emulateCycle:00000000 emulateCycle
+     /tmp/ccBNXkdn.s:4000   .text.emulateCycle:000000cc $d
+     /tmp/ccBNXkdn.s:4008   .text.loadApplication:00000000 $t
+     /tmp/ccBNXkdn.s:4013   .text.loadApplication:00000000 loadApplication
+     /tmp/ccBNXkdn.s:4047   .text.loadApplication:00000024 $d
+     /tmp/ccBNXkdn.s:4052   .data.x.4299:00000000 $d
+     /tmp/ccBNXkdn.s:4058   .data.y.4300:00000000 $d
+     /tmp/ccBNXkdn.s:4064   .data.z.4301:00000000 $d
+     /tmp/ccBNXkdn.s:4070   .data.w.4302:00000000 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+memcpy

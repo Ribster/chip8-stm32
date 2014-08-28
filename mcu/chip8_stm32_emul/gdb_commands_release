@@ -1,0 +1,2 @@
+tar ext :4242
+load Release/chip8_stm32_emul.elf

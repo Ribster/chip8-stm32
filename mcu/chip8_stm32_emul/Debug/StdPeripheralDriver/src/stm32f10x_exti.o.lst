@@ -1,0 +1,790 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 6
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"stm32f10x_exti.c"
+  23              	.Ltext0:
+  24              		.file 1 "../StdPeripheralDriver/src/stm32f10x_exti.c"
+ 17569              		.align	2
+ 17570              		.global	EXTI_DeInit
+ 17571              		.thumb
+ 17572              		.thumb_func
+ 17574              	EXTI_DeInit:
+ 17575              	.LFB29:
+   1:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+   2:../StdPeripheralDriver/src/stm32f10x_exti.c ****   ******************************************************************************
+   3:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @file    stm32f10x_exti.c
+   4:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @author  MCD Application Team
+   5:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @version V3.5.0
+   6:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @date    11-March-2011
+   7:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief   This file provides all the EXTI firmware functions.
+   8:../StdPeripheralDriver/src/stm32f10x_exti.c ****   ******************************************************************************
+   9:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @attention
+  10:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *
+  11:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+  12:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
+  13:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
+  14:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
+  15:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
+  16:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+  17:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *
+  18:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+  19:../StdPeripheralDriver/src/stm32f10x_exti.c ****   ******************************************************************************
+  20:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  21:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  22:../StdPeripheralDriver/src/stm32f10x_exti.c **** /* Includes ------------------------------------------------------------------*/
+  23:../StdPeripheralDriver/src/stm32f10x_exti.c **** #include "stm32f10x_exti.h"
+  24:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  25:../StdPeripheralDriver/src/stm32f10x_exti.c **** /** @addtogroup STM32F10x_StdPeriph_Driver
+  26:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @{
+  27:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  28:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  29:../StdPeripheralDriver/src/stm32f10x_exti.c **** /** @defgroup EXTI 
+  30:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief EXTI driver modules
+  31:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @{
+  32:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  33:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  34:../StdPeripheralDriver/src/stm32f10x_exti.c **** /** @defgroup EXTI_Private_TypesDefinitions
+  35:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @{
+  36:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  37:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  38:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+  39:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @}
+  40:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  41:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  42:../StdPeripheralDriver/src/stm32f10x_exti.c **** /** @defgroup EXTI_Private_Defines
+  43:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @{
+  44:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  45:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  46:../StdPeripheralDriver/src/stm32f10x_exti.c **** #define EXTI_LINENONE    ((uint32_t)0x00000)  /* No interrupt selected */
+  47:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  48:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+  49:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @}
+  50:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  51:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  52:../StdPeripheralDriver/src/stm32f10x_exti.c **** /** @defgroup EXTI_Private_Macros
+  53:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @{
+  54:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  55:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  56:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+  57:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @}
+  58:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  59:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  60:../StdPeripheralDriver/src/stm32f10x_exti.c **** /** @defgroup EXTI_Private_Variables
+  61:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @{
+  62:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  63:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  64:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+  65:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @}
+  66:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  67:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  68:../StdPeripheralDriver/src/stm32f10x_exti.c **** /** @defgroup EXTI_Private_FunctionPrototypes
+  69:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @{
+  70:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  71:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  72:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+  73:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @}
+  74:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  75:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  76:../StdPeripheralDriver/src/stm32f10x_exti.c **** /** @defgroup EXTI_Private_Functions
+  77:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @{
+  78:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  79:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  80:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+  81:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief  Deinitializes the EXTI peripheral registers to their default reset values.
+  82:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @param  None
+  83:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @retval None
+  84:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+  85:../StdPeripheralDriver/src/stm32f10x_exti.c **** void EXTI_DeInit(void)
+  86:../StdPeripheralDriver/src/stm32f10x_exti.c **** {
+ 17576              		.loc 1 86 0
+ 17577              		.cfi_startproc
+ 17578              		@ args = 0, pretend = 0, frame = 0
+ 17579              		@ frame_needed = 1, uses_anonymous_args = 0
+ 17580              		@ link register save eliminated.
+ 17581 0000 80B4     		push	{r7}
+ 17582              	.LCFI0:
+ 17583              		.cfi_def_cfa_offset 4
+ 17584 0002 00AF     		add	r7, sp, #0
+ 17585              		.cfi_offset 7, -4
+ 17586              	.LCFI1:
+ 17587              		.cfi_def_cfa_register 7
+  87:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI->IMR = 0x00000000;
+ 17588              		.loc 1 87 0
+ 17589 0004 0A4B     		ldr	r3, .L2
+ 17590 0006 4FF00002 		mov	r2, #0
+ 17591 000a 1A60     		str	r2, [r3, #0]
+  88:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI->EMR = 0x00000000;
+ 17592              		.loc 1 88 0
+ 17593 000c 084B     		ldr	r3, .L2
+ 17594 000e 4FF00002 		mov	r2, #0
+ 17595 0012 5A60     		str	r2, [r3, #4]
+  89:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI->RTSR = 0x00000000; 
+ 17596              		.loc 1 89 0
+ 17597 0014 064B     		ldr	r3, .L2
+ 17598 0016 4FF00002 		mov	r2, #0
+ 17599 001a 9A60     		str	r2, [r3, #8]
+  90:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI->FTSR = 0x00000000; 
+ 17600              		.loc 1 90 0
+ 17601 001c 044B     		ldr	r3, .L2
+ 17602 001e 4FF00002 		mov	r2, #0
+ 17603 0022 DA60     		str	r2, [r3, #12]
+  91:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI->PR = 0x000FFFFF;
+ 17604              		.loc 1 91 0
+ 17605 0024 024B     		ldr	r3, .L2
+ 17606 0026 034A     		ldr	r2, .L2+4
+ 17607 0028 5A61     		str	r2, [r3, #20]
+  92:../StdPeripheralDriver/src/stm32f10x_exti.c **** }
+ 17608              		.loc 1 92 0
+ 17609 002a BD46     		mov	sp, r7
+ 17610 002c 80BC     		pop	{r7}
+ 17611 002e 7047     		bx	lr
+ 17612              	.L3:
+ 17613              		.align	2
+ 17614              	.L2:
+ 17615 0030 00040140 		.word	1073808384
+ 17616 0034 FFFF0F00 		.word	1048575
+ 17617              		.cfi_endproc
+ 17618              	.LFE29:
+ 17620              		.section	.text.EXTI_Init,"ax",%progbits
+ 17621              		.align	2
+ 17622              		.global	EXTI_Init
+ 17623              		.thumb
+ 17624              		.thumb_func
+ 17626              	EXTI_Init:
+ 17627              	.LFB30:
+  93:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+  94:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+  95:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief  Initializes the EXTI peripheral according to the specified
+  96:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *         parameters in the EXTI_InitStruct.
+  97:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @param  EXTI_InitStruct: pointer to a EXTI_InitTypeDef structure
+  98:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *         that contains the configuration information for the EXTI peripheral.
+  99:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @retval None
+ 100:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+ 101:../StdPeripheralDriver/src/stm32f10x_exti.c **** void EXTI_Init(EXTI_InitTypeDef* EXTI_InitStruct)
+ 102:../StdPeripheralDriver/src/stm32f10x_exti.c **** {
+ 17628              		.loc 1 102 0
+ 17629              		.cfi_startproc
+ 17630              		@ args = 0, pretend = 0, frame = 16
+ 17631              		@ frame_needed = 1, uses_anonymous_args = 0
+ 17632              		@ link register save eliminated.
+ 17633 0000 80B4     		push	{r7}
+ 17634              	.LCFI2:
+ 17635              		.cfi_def_cfa_offset 4
+ 17636 0002 85B0     		sub	sp, sp, #20
+ 17637              	.LCFI3:
+ 17638              		.cfi_def_cfa_offset 24
+ 17639 0004 00AF     		add	r7, sp, #0
+ 17640              		.cfi_offset 7, -4
+ 17641              	.LCFI4:
+ 17642              		.cfi_def_cfa_register 7
+ 17643 0006 7860     		str	r0, [r7, #4]
+ 103:../StdPeripheralDriver/src/stm32f10x_exti.c ****   uint32_t tmp = 0;
+ 17644              		.loc 1 103 0
+ 17645 0008 4FF00003 		mov	r3, #0
+ 17646 000c FB60     		str	r3, [r7, #12]
+ 104:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 105:../StdPeripheralDriver/src/stm32f10x_exti.c ****   /* Check the parameters */
+ 106:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_EXTI_MODE(EXTI_InitStruct->EXTI_Mode));
+ 107:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_EXTI_TRIGGER(EXTI_InitStruct->EXTI_Trigger));
+ 108:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_EXTI_LINE(EXTI_InitStruct->EXTI_Line));  
+ 109:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_FUNCTIONAL_STATE(EXTI_InitStruct->EXTI_LineCmd));
+ 110:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 111:../StdPeripheralDriver/src/stm32f10x_exti.c ****   tmp = (uint32_t)EXTI_BASE;
+ 17647              		.loc 1 111 0
+ 17648 000e 3A4B     		ldr	r3, .L8
+ 17649 0010 FB60     		str	r3, [r7, #12]
+ 112:../StdPeripheralDriver/src/stm32f10x_exti.c ****      
+ 113:../StdPeripheralDriver/src/stm32f10x_exti.c ****   if (EXTI_InitStruct->EXTI_LineCmd != DISABLE)
+ 17650              		.loc 1 113 0
+ 17651 0012 7B68     		ldr	r3, [r7, #4]
+ 17652 0014 9B79     		ldrb	r3, [r3, #6]	@ zero_extendqisi2
+ 17653 0016 002B     		cmp	r3, #0
+ 17654 0018 59D0     		beq	.L5
+ 114:../StdPeripheralDriver/src/stm32f10x_exti.c ****   {
+ 115:../StdPeripheralDriver/src/stm32f10x_exti.c ****     /* Clear EXTI line configuration */
+ 116:../StdPeripheralDriver/src/stm32f10x_exti.c ****     EXTI->IMR &= ~EXTI_InitStruct->EXTI_Line;
+ 17655              		.loc 1 116 0
+ 17656 001a 374B     		ldr	r3, .L8
+ 17657 001c 364A     		ldr	r2, .L8
+ 17658 001e 1168     		ldr	r1, [r2, #0]
+ 17659 0020 7A68     		ldr	r2, [r7, #4]
+ 17660 0022 1268     		ldr	r2, [r2, #0]
+ 17661 0024 6FEA0202 		mvn	r2, r2
+ 17662 0028 01EA0202 		and	r2, r1, r2
+ 17663 002c 1A60     		str	r2, [r3, #0]
+ 117:../StdPeripheralDriver/src/stm32f10x_exti.c ****     EXTI->EMR &= ~EXTI_InitStruct->EXTI_Line;
+ 17664              		.loc 1 117 0
+ 17665 002e 324B     		ldr	r3, .L8
+ 17666 0030 314A     		ldr	r2, .L8
+ 17667 0032 5168     		ldr	r1, [r2, #4]
+ 17668 0034 7A68     		ldr	r2, [r7, #4]
+ 17669 0036 1268     		ldr	r2, [r2, #0]
+ 17670 0038 6FEA0202 		mvn	r2, r2
+ 17671 003c 01EA0202 		and	r2, r1, r2
+ 17672 0040 5A60     		str	r2, [r3, #4]
+ 118:../StdPeripheralDriver/src/stm32f10x_exti.c ****     
+ 119:../StdPeripheralDriver/src/stm32f10x_exti.c ****     tmp += EXTI_InitStruct->EXTI_Mode;
+ 17673              		.loc 1 119 0
+ 17674 0042 7B68     		ldr	r3, [r7, #4]
+ 17675 0044 1B79     		ldrb	r3, [r3, #4]	@ zero_extendqisi2
+ 17676 0046 FA68     		ldr	r2, [r7, #12]
+ 17677 0048 D318     		adds	r3, r2, r3
+ 17678 004a FB60     		str	r3, [r7, #12]
+ 120:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 121:../StdPeripheralDriver/src/stm32f10x_exti.c ****     *(__IO uint32_t *) tmp |= EXTI_InitStruct->EXTI_Line;
+ 17679              		.loc 1 121 0
+ 17680 004c FB68     		ldr	r3, [r7, #12]
+ 17681 004e FA68     		ldr	r2, [r7, #12]
+ 17682 0050 1168     		ldr	r1, [r2, #0]
+ 17683 0052 7A68     		ldr	r2, [r7, #4]
+ 17684 0054 1268     		ldr	r2, [r2, #0]
+ 17685 0056 41EA0202 		orr	r2, r1, r2
+ 17686 005a 1A60     		str	r2, [r3, #0]
+ 122:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 123:../StdPeripheralDriver/src/stm32f10x_exti.c ****     /* Clear Rising Falling edge configuration */
+ 124:../StdPeripheralDriver/src/stm32f10x_exti.c ****     EXTI->RTSR &= ~EXTI_InitStruct->EXTI_Line;
+ 17687              		.loc 1 124 0
+ 17688 005c 264B     		ldr	r3, .L8
+ 17689 005e 264A     		ldr	r2, .L8
+ 17690 0060 9168     		ldr	r1, [r2, #8]
+ 17691 0062 7A68     		ldr	r2, [r7, #4]
+ 17692 0064 1268     		ldr	r2, [r2, #0]
+ 17693 0066 6FEA0202 		mvn	r2, r2
+ 17694 006a 01EA0202 		and	r2, r1, r2
+ 17695 006e 9A60     		str	r2, [r3, #8]
+ 125:../StdPeripheralDriver/src/stm32f10x_exti.c ****     EXTI->FTSR &= ~EXTI_InitStruct->EXTI_Line;
+ 17696              		.loc 1 125 0
+ 17697 0070 214B     		ldr	r3, .L8
+ 17698 0072 214A     		ldr	r2, .L8
+ 17699 0074 D168     		ldr	r1, [r2, #12]
+ 17700 0076 7A68     		ldr	r2, [r7, #4]
+ 17701 0078 1268     		ldr	r2, [r2, #0]
+ 17702 007a 6FEA0202 		mvn	r2, r2
+ 17703 007e 01EA0202 		and	r2, r1, r2
+ 17704 0082 DA60     		str	r2, [r3, #12]
+ 126:../StdPeripheralDriver/src/stm32f10x_exti.c ****     
+ 127:../StdPeripheralDriver/src/stm32f10x_exti.c ****     /* Select the trigger for the selected external interrupts */
+ 128:../StdPeripheralDriver/src/stm32f10x_exti.c ****     if (EXTI_InitStruct->EXTI_Trigger == EXTI_Trigger_Rising_Falling)
+ 17705              		.loc 1 128 0
+ 17706 0084 7B68     		ldr	r3, [r7, #4]
+ 17707 0086 5B79     		ldrb	r3, [r3, #5]	@ zero_extendqisi2
+ 17708 0088 102B     		cmp	r3, #16
+ 17709 008a 10D1     		bne	.L6
+ 129:../StdPeripheralDriver/src/stm32f10x_exti.c ****     {
+ 130:../StdPeripheralDriver/src/stm32f10x_exti.c ****       /* Rising Falling edge */
+ 131:../StdPeripheralDriver/src/stm32f10x_exti.c ****       EXTI->RTSR |= EXTI_InitStruct->EXTI_Line;
+ 17710              		.loc 1 131 0
+ 17711 008c 1A4B     		ldr	r3, .L8
+ 17712 008e 1A4A     		ldr	r2, .L8
+ 17713 0090 9168     		ldr	r1, [r2, #8]
+ 17714 0092 7A68     		ldr	r2, [r7, #4]
+ 17715 0094 1268     		ldr	r2, [r2, #0]
+ 17716 0096 41EA0202 		orr	r2, r1, r2
+ 17717 009a 9A60     		str	r2, [r3, #8]
+ 132:../StdPeripheralDriver/src/stm32f10x_exti.c ****       EXTI->FTSR |= EXTI_InitStruct->EXTI_Line;
+ 17718              		.loc 1 132 0
+ 17719 009c 164B     		ldr	r3, .L8
+ 17720 009e 164A     		ldr	r2, .L8
+ 17721 00a0 D168     		ldr	r1, [r2, #12]
+ 17722 00a2 7A68     		ldr	r2, [r7, #4]
+ 17723 00a4 1268     		ldr	r2, [r2, #0]
+ 17724 00a6 41EA0202 		orr	r2, r1, r2
+ 17725 00aa DA60     		str	r2, [r3, #12]
+ 17726 00ac 1EE0     		b	.L4
+ 17727              	.L6:
+ 133:../StdPeripheralDriver/src/stm32f10x_exti.c ****     }
+ 134:../StdPeripheralDriver/src/stm32f10x_exti.c ****     else
+ 135:../StdPeripheralDriver/src/stm32f10x_exti.c ****     {
+ 136:../StdPeripheralDriver/src/stm32f10x_exti.c ****       tmp = (uint32_t)EXTI_BASE;
+ 17728              		.loc 1 136 0
+ 17729 00ae 124B     		ldr	r3, .L8
+ 17730 00b0 FB60     		str	r3, [r7, #12]
+ 137:../StdPeripheralDriver/src/stm32f10x_exti.c ****       tmp += EXTI_InitStruct->EXTI_Trigger;
+ 17731              		.loc 1 137 0
+ 17732 00b2 7B68     		ldr	r3, [r7, #4]
+ 17733 00b4 5B79     		ldrb	r3, [r3, #5]	@ zero_extendqisi2
+ 17734 00b6 FA68     		ldr	r2, [r7, #12]
+ 17735 00b8 D318     		adds	r3, r2, r3
+ 17736 00ba FB60     		str	r3, [r7, #12]
+ 138:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 139:../StdPeripheralDriver/src/stm32f10x_exti.c ****       *(__IO uint32_t *) tmp |= EXTI_InitStruct->EXTI_Line;
+ 17737              		.loc 1 139 0
+ 17738 00bc FB68     		ldr	r3, [r7, #12]
+ 17739 00be FA68     		ldr	r2, [r7, #12]
+ 17740 00c0 1168     		ldr	r1, [r2, #0]
+ 17741 00c2 7A68     		ldr	r2, [r7, #4]
+ 17742 00c4 1268     		ldr	r2, [r2, #0]
+ 17743 00c6 41EA0202 		orr	r2, r1, r2
+ 17744 00ca 1A60     		str	r2, [r3, #0]
+ 17745 00cc 0EE0     		b	.L4
+ 17746              	.L5:
+ 140:../StdPeripheralDriver/src/stm32f10x_exti.c ****     }
+ 141:../StdPeripheralDriver/src/stm32f10x_exti.c ****   }
+ 142:../StdPeripheralDriver/src/stm32f10x_exti.c ****   else
+ 143:../StdPeripheralDriver/src/stm32f10x_exti.c ****   {
+ 144:../StdPeripheralDriver/src/stm32f10x_exti.c ****     tmp += EXTI_InitStruct->EXTI_Mode;
+ 17747              		.loc 1 144 0
+ 17748 00ce 7B68     		ldr	r3, [r7, #4]
+ 17749 00d0 1B79     		ldrb	r3, [r3, #4]	@ zero_extendqisi2
+ 17750 00d2 FA68     		ldr	r2, [r7, #12]
+ 17751 00d4 D318     		adds	r3, r2, r3
+ 17752 00d6 FB60     		str	r3, [r7, #12]
+ 145:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 146:../StdPeripheralDriver/src/stm32f10x_exti.c ****     /* Disable the selected external lines */
+ 147:../StdPeripheralDriver/src/stm32f10x_exti.c ****     *(__IO uint32_t *) tmp &= ~EXTI_InitStruct->EXTI_Line;
+ 17753              		.loc 1 147 0
+ 17754 00d8 FB68     		ldr	r3, [r7, #12]
+ 17755 00da FA68     		ldr	r2, [r7, #12]
+ 17756 00dc 1168     		ldr	r1, [r2, #0]
+ 17757 00de 7A68     		ldr	r2, [r7, #4]
+ 17758 00e0 1268     		ldr	r2, [r2, #0]
+ 17759 00e2 6FEA0202 		mvn	r2, r2
+ 17760 00e6 01EA0202 		and	r2, r1, r2
+ 17761 00ea 1A60     		str	r2, [r3, #0]
+ 17762              	.L4:
+ 148:../StdPeripheralDriver/src/stm32f10x_exti.c ****   }
+ 149:../StdPeripheralDriver/src/stm32f10x_exti.c **** }
+ 17763              		.loc 1 149 0
+ 17764 00ec 07F11407 		add	r7, r7, #20
+ 17765 00f0 BD46     		mov	sp, r7
+ 17766 00f2 80BC     		pop	{r7}
+ 17767 00f4 7047     		bx	lr
+ 17768              	.L9:
+ 17769 00f6 00BF     		.align	2
+ 17770              	.L8:
+ 17771 00f8 00040140 		.word	1073808384
+ 17772              		.cfi_endproc
+ 17773              	.LFE30:
+ 17775              		.section	.text.EXTI_StructInit,"ax",%progbits
+ 17776              		.align	2
+ 17777              		.global	EXTI_StructInit
+ 17778              		.thumb
+ 17779              		.thumb_func
+ 17781              	EXTI_StructInit:
+ 17782              	.LFB31:
+ 150:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 151:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+ 152:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief  Fills each EXTI_InitStruct member with its reset value.
+ 153:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @param  EXTI_InitStruct: pointer to a EXTI_InitTypeDef structure which will
+ 154:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *         be initialized.
+ 155:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @retval None
+ 156:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+ 157:../StdPeripheralDriver/src/stm32f10x_exti.c **** void EXTI_StructInit(EXTI_InitTypeDef* EXTI_InitStruct)
+ 158:../StdPeripheralDriver/src/stm32f10x_exti.c **** {
+ 17783              		.loc 1 158 0
+ 17784              		.cfi_startproc
+ 17785              		@ args = 0, pretend = 0, frame = 8
+ 17786              		@ frame_needed = 1, uses_anonymous_args = 0
+ 17787              		@ link register save eliminated.
+ 17788 0000 80B4     		push	{r7}
+ 17789              	.LCFI5:
+ 17790              		.cfi_def_cfa_offset 4
+ 17791 0002 83B0     		sub	sp, sp, #12
+ 17792              	.LCFI6:
+ 17793              		.cfi_def_cfa_offset 16
+ 17794 0004 00AF     		add	r7, sp, #0
+ 17795              		.cfi_offset 7, -4
+ 17796              	.LCFI7:
+ 17797              		.cfi_def_cfa_register 7
+ 17798 0006 7860     		str	r0, [r7, #4]
+ 159:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI_InitStruct->EXTI_Line = EXTI_LINENONE;
+ 17799              		.loc 1 159 0
+ 17800 0008 7B68     		ldr	r3, [r7, #4]
+ 17801 000a 4FF00002 		mov	r2, #0
+ 17802 000e 1A60     		str	r2, [r3, #0]
+ 160:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI_InitStruct->EXTI_Mode = EXTI_Mode_Interrupt;
+ 17803              		.loc 1 160 0
+ 17804 0010 7B68     		ldr	r3, [r7, #4]
+ 17805 0012 4FF00002 		mov	r2, #0
+ 17806 0016 1A71     		strb	r2, [r3, #4]
+ 161:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI_InitStruct->EXTI_Trigger = EXTI_Trigger_Falling;
+ 17807              		.loc 1 161 0
+ 17808 0018 7B68     		ldr	r3, [r7, #4]
+ 17809 001a 4FF00C02 		mov	r2, #12
+ 17810 001e 5A71     		strb	r2, [r3, #5]
+ 162:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI_InitStruct->EXTI_LineCmd = DISABLE;
+ 17811              		.loc 1 162 0
+ 17812 0020 7B68     		ldr	r3, [r7, #4]
+ 17813 0022 4FF00002 		mov	r2, #0
+ 17814 0026 9A71     		strb	r2, [r3, #6]
+ 163:../StdPeripheralDriver/src/stm32f10x_exti.c **** }
+ 17815              		.loc 1 163 0
+ 17816 0028 07F10C07 		add	r7, r7, #12
+ 17817 002c BD46     		mov	sp, r7
+ 17818 002e 80BC     		pop	{r7}
+ 17819 0030 7047     		bx	lr
+ 17820              		.cfi_endproc
+ 17821              	.LFE31:
+ 17823 0032 00BF     		.section	.text.EXTI_GenerateSWInterrupt,"ax",%progbits
+ 17824              		.align	2
+ 17825              		.global	EXTI_GenerateSWInterrupt
+ 17826              		.thumb
+ 17827              		.thumb_func
+ 17829              	EXTI_GenerateSWInterrupt:
+ 17830              	.LFB32:
+ 164:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 165:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+ 166:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief  Generates a Software interrupt.
+ 167:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @param  EXTI_Line: specifies the EXTI lines to be enabled or disabled.
+ 168:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *   This parameter can be any combination of EXTI_Linex where x can be (0..19).
+ 169:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @retval None
+ 170:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+ 171:../StdPeripheralDriver/src/stm32f10x_exti.c **** void EXTI_GenerateSWInterrupt(uint32_t EXTI_Line)
+ 172:../StdPeripheralDriver/src/stm32f10x_exti.c **** {
+ 17831              		.loc 1 172 0
+ 17832              		.cfi_startproc
+ 17833              		@ args = 0, pretend = 0, frame = 8
+ 17834              		@ frame_needed = 1, uses_anonymous_args = 0
+ 17835              		@ link register save eliminated.
+ 17836 0000 80B4     		push	{r7}
+ 17837              	.LCFI8:
+ 17838              		.cfi_def_cfa_offset 4
+ 17839 0002 83B0     		sub	sp, sp, #12
+ 17840              	.LCFI9:
+ 17841              		.cfi_def_cfa_offset 16
+ 17842 0004 00AF     		add	r7, sp, #0
+ 17843              		.cfi_offset 7, -4
+ 17844              	.LCFI10:
+ 17845              		.cfi_def_cfa_register 7
+ 17846 0006 7860     		str	r0, [r7, #4]
+ 173:../StdPeripheralDriver/src/stm32f10x_exti.c ****   /* Check the parameters */
+ 174:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_EXTI_LINE(EXTI_Line));
+ 175:../StdPeripheralDriver/src/stm32f10x_exti.c ****   
+ 176:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI->SWIER |= EXTI_Line;
+ 17847              		.loc 1 176 0
+ 17848 0008 054B     		ldr	r3, .L12
+ 17849 000a 054A     		ldr	r2, .L12
+ 17850 000c 1169     		ldr	r1, [r2, #16]
+ 17851 000e 7A68     		ldr	r2, [r7, #4]
+ 17852 0010 41EA0202 		orr	r2, r1, r2
+ 17853 0014 1A61     		str	r2, [r3, #16]
+ 177:../StdPeripheralDriver/src/stm32f10x_exti.c **** }
+ 17854              		.loc 1 177 0
+ 17855 0016 07F10C07 		add	r7, r7, #12
+ 17856 001a BD46     		mov	sp, r7
+ 17857 001c 80BC     		pop	{r7}
+ 17858 001e 7047     		bx	lr
+ 17859              	.L13:
+ 17860              		.align	2
+ 17861              	.L12:
+ 17862 0020 00040140 		.word	1073808384
+ 17863              		.cfi_endproc
+ 17864              	.LFE32:
+ 17866              		.section	.text.EXTI_GetFlagStatus,"ax",%progbits
+ 17867              		.align	2
+ 17868              		.global	EXTI_GetFlagStatus
+ 17869              		.thumb
+ 17870              		.thumb_func
+ 17872              	EXTI_GetFlagStatus:
+ 17873              	.LFB33:
+ 178:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 179:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+ 180:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief  Checks whether the specified EXTI line flag is set or not.
+ 181:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @param  EXTI_Line: specifies the EXTI line flag to check.
+ 182:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *   This parameter can be:
+ 183:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *     @arg EXTI_Linex: External interrupt line x where x(0..19)
+ 184:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @retval The new state of EXTI_Line (SET or RESET).
+ 185:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+ 186:../StdPeripheralDriver/src/stm32f10x_exti.c **** FlagStatus EXTI_GetFlagStatus(uint32_t EXTI_Line)
+ 187:../StdPeripheralDriver/src/stm32f10x_exti.c **** {
+ 17874              		.loc 1 187 0
+ 17875              		.cfi_startproc
+ 17876              		@ args = 0, pretend = 0, frame = 16
+ 17877              		@ frame_needed = 1, uses_anonymous_args = 0
+ 17878              		@ link register save eliminated.
+ 17879 0000 80B4     		push	{r7}
+ 17880              	.LCFI11:
+ 17881              		.cfi_def_cfa_offset 4
+ 17882 0002 85B0     		sub	sp, sp, #20
+ 17883              	.LCFI12:
+ 17884              		.cfi_def_cfa_offset 24
+ 17885 0004 00AF     		add	r7, sp, #0
+ 17886              		.cfi_offset 7, -4
+ 17887              	.LCFI13:
+ 17888              		.cfi_def_cfa_register 7
+ 17889 0006 7860     		str	r0, [r7, #4]
+ 188:../StdPeripheralDriver/src/stm32f10x_exti.c ****   FlagStatus bitstatus = RESET;
+ 17890              		.loc 1 188 0
+ 17891 0008 4FF00003 		mov	r3, #0
+ 17892 000c FB73     		strb	r3, [r7, #15]
+ 189:../StdPeripheralDriver/src/stm32f10x_exti.c ****   /* Check the parameters */
+ 190:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_GET_EXTI_LINE(EXTI_Line));
+ 191:../StdPeripheralDriver/src/stm32f10x_exti.c ****   
+ 192:../StdPeripheralDriver/src/stm32f10x_exti.c ****   if ((EXTI->PR & EXTI_Line) != (uint32_t)RESET)
+ 17893              		.loc 1 192 0
+ 17894 000e 0A4B     		ldr	r3, .L17
+ 17895 0010 5A69     		ldr	r2, [r3, #20]
+ 17896 0012 7B68     		ldr	r3, [r7, #4]
+ 17897 0014 02EA0303 		and	r3, r2, r3
+ 17898 0018 002B     		cmp	r3, #0
+ 17899 001a 03D0     		beq	.L15
+ 193:../StdPeripheralDriver/src/stm32f10x_exti.c ****   {
+ 194:../StdPeripheralDriver/src/stm32f10x_exti.c ****     bitstatus = SET;
+ 17900              		.loc 1 194 0
+ 17901 001c 4FF00103 		mov	r3, #1
+ 17902 0020 FB73     		strb	r3, [r7, #15]
+ 17903 0022 02E0     		b	.L16
+ 17904              	.L15:
+ 195:../StdPeripheralDriver/src/stm32f10x_exti.c ****   }
+ 196:../StdPeripheralDriver/src/stm32f10x_exti.c ****   else
+ 197:../StdPeripheralDriver/src/stm32f10x_exti.c ****   {
+ 198:../StdPeripheralDriver/src/stm32f10x_exti.c ****     bitstatus = RESET;
+ 17905              		.loc 1 198 0
+ 17906 0024 4FF00003 		mov	r3, #0
+ 17907 0028 FB73     		strb	r3, [r7, #15]
+ 17908              	.L16:
+ 199:../StdPeripheralDriver/src/stm32f10x_exti.c ****   }
+ 200:../StdPeripheralDriver/src/stm32f10x_exti.c ****   return bitstatus;
+ 17909              		.loc 1 200 0
+ 17910 002a FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 201:../StdPeripheralDriver/src/stm32f10x_exti.c **** }
+ 17911              		.loc 1 201 0
+ 17912 002c 1846     		mov	r0, r3
+ 17913 002e 07F11407 		add	r7, r7, #20
+ 17914 0032 BD46     		mov	sp, r7
+ 17915 0034 80BC     		pop	{r7}
+ 17916 0036 7047     		bx	lr
+ 17917              	.L18:
+ 17918              		.align	2
+ 17919              	.L17:
+ 17920 0038 00040140 		.word	1073808384
+ 17921              		.cfi_endproc
+ 17922              	.LFE33:
+ 17924              		.section	.text.EXTI_ClearFlag,"ax",%progbits
+ 17925              		.align	2
+ 17926              		.global	EXTI_ClearFlag
+ 17927              		.thumb
+ 17928              		.thumb_func
+ 17930              	EXTI_ClearFlag:
+ 17931              	.LFB34:
+ 202:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 203:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+ 204:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief  Clears the EXTI's line pending flags.
+ 205:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @param  EXTI_Line: specifies the EXTI lines flags to clear.
+ 206:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *   This parameter can be any combination of EXTI_Linex where x can be (0..19).
+ 207:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @retval None
+ 208:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+ 209:../StdPeripheralDriver/src/stm32f10x_exti.c **** void EXTI_ClearFlag(uint32_t EXTI_Line)
+ 210:../StdPeripheralDriver/src/stm32f10x_exti.c **** {
+ 17932              		.loc 1 210 0
+ 17933              		.cfi_startproc
+ 17934              		@ args = 0, pretend = 0, frame = 8
+ 17935              		@ frame_needed = 1, uses_anonymous_args = 0
+ 17936              		@ link register save eliminated.
+ 17937 0000 80B4     		push	{r7}
+ 17938              	.LCFI14:
+ 17939              		.cfi_def_cfa_offset 4
+ 17940 0002 83B0     		sub	sp, sp, #12
+ 17941              	.LCFI15:
+ 17942              		.cfi_def_cfa_offset 16
+ 17943 0004 00AF     		add	r7, sp, #0
+ 17944              		.cfi_offset 7, -4
+ 17945              	.LCFI16:
+ 17946              		.cfi_def_cfa_register 7
+ 17947 0006 7860     		str	r0, [r7, #4]
+ 211:../StdPeripheralDriver/src/stm32f10x_exti.c ****   /* Check the parameters */
+ 212:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_EXTI_LINE(EXTI_Line));
+ 213:../StdPeripheralDriver/src/stm32f10x_exti.c ****   
+ 214:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI->PR = EXTI_Line;
+ 17948              		.loc 1 214 0
+ 17949 0008 034B     		ldr	r3, .L20
+ 17950 000a 7A68     		ldr	r2, [r7, #4]
+ 17951 000c 5A61     		str	r2, [r3, #20]
+ 215:../StdPeripheralDriver/src/stm32f10x_exti.c **** }
+ 17952              		.loc 1 215 0
+ 17953 000e 07F10C07 		add	r7, r7, #12
+ 17954 0012 BD46     		mov	sp, r7
+ 17955 0014 80BC     		pop	{r7}
+ 17956 0016 7047     		bx	lr
+ 17957              	.L21:
+ 17958              		.align	2
+ 17959              	.L20:
+ 17960 0018 00040140 		.word	1073808384
+ 17961              		.cfi_endproc
+ 17962              	.LFE34:
+ 17964              		.section	.text.EXTI_GetITStatus,"ax",%progbits
+ 17965              		.align	2
+ 17966              		.global	EXTI_GetITStatus
+ 17967              		.thumb
+ 17968              		.thumb_func
+ 17970              	EXTI_GetITStatus:
+ 17971              	.LFB35:
+ 216:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 217:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+ 218:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief  Checks whether the specified EXTI line is asserted or not.
+ 219:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @param  EXTI_Line: specifies the EXTI line to check.
+ 220:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *   This parameter can be:
+ 221:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *     @arg EXTI_Linex: External interrupt line x where x(0..19)
+ 222:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @retval The new state of EXTI_Line (SET or RESET).
+ 223:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+ 224:../StdPeripheralDriver/src/stm32f10x_exti.c **** ITStatus EXTI_GetITStatus(uint32_t EXTI_Line)
+ 225:../StdPeripheralDriver/src/stm32f10x_exti.c **** {
+ 17972              		.loc 1 225 0
+ 17973              		.cfi_startproc
+ 17974              		@ args = 0, pretend = 0, frame = 16
+ 17975              		@ frame_needed = 1, uses_anonymous_args = 0
+ 17976              		@ link register save eliminated.
+ 17977 0000 80B4     		push	{r7}
+ 17978              	.LCFI17:
+ 17979              		.cfi_def_cfa_offset 4
+ 17980 0002 85B0     		sub	sp, sp, #20
+ 17981              	.LCFI18:
+ 17982              		.cfi_def_cfa_offset 24
+ 17983 0004 00AF     		add	r7, sp, #0
+ 17984              		.cfi_offset 7, -4
+ 17985              	.LCFI19:
+ 17986              		.cfi_def_cfa_register 7
+ 17987 0006 7860     		str	r0, [r7, #4]
+ 226:../StdPeripheralDriver/src/stm32f10x_exti.c ****   ITStatus bitstatus = RESET;
+ 17988              		.loc 1 226 0
+ 17989 0008 4FF00003 		mov	r3, #0
+ 17990 000c FB73     		strb	r3, [r7, #15]
+ 227:../StdPeripheralDriver/src/stm32f10x_exti.c ****   uint32_t enablestatus = 0;
+ 17991              		.loc 1 227 0
+ 17992 000e 4FF00003 		mov	r3, #0
+ 17993 0012 BB60     		str	r3, [r7, #8]
+ 228:../StdPeripheralDriver/src/stm32f10x_exti.c ****   /* Check the parameters */
+ 229:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_GET_EXTI_LINE(EXTI_Line));
+ 230:../StdPeripheralDriver/src/stm32f10x_exti.c ****   
+ 231:../StdPeripheralDriver/src/stm32f10x_exti.c ****   enablestatus =  EXTI->IMR & EXTI_Line;
+ 17994              		.loc 1 231 0
+ 17995 0014 0E4B     		ldr	r3, .L25
+ 17996 0016 1A68     		ldr	r2, [r3, #0]
+ 17997 0018 7B68     		ldr	r3, [r7, #4]
+ 17998 001a 02EA0303 		and	r3, r2, r3
+ 17999 001e BB60     		str	r3, [r7, #8]
+ 232:../StdPeripheralDriver/src/stm32f10x_exti.c ****   if (((EXTI->PR & EXTI_Line) != (uint32_t)RESET) && (enablestatus != (uint32_t)RESET))
+ 18000              		.loc 1 232 0
+ 18001 0020 0B4B     		ldr	r3, .L25
+ 18002 0022 5A69     		ldr	r2, [r3, #20]
+ 18003 0024 7B68     		ldr	r3, [r7, #4]
+ 18004 0026 02EA0303 		and	r3, r2, r3
+ 18005 002a 002B     		cmp	r3, #0
+ 18006 002c 06D0     		beq	.L23
+ 18007              		.loc 1 232 0 is_stmt 0 discriminator 1
+ 18008 002e BB68     		ldr	r3, [r7, #8]
+ 18009 0030 002B     		cmp	r3, #0
+ 18010 0032 03D0     		beq	.L23
+ 233:../StdPeripheralDriver/src/stm32f10x_exti.c ****   {
+ 234:../StdPeripheralDriver/src/stm32f10x_exti.c ****     bitstatus = SET;
+ 18011              		.loc 1 234 0 is_stmt 1
+ 18012 0034 4FF00103 		mov	r3, #1
+ 18013 0038 FB73     		strb	r3, [r7, #15]
+ 18014 003a 02E0     		b	.L24
+ 18015              	.L23:
+ 235:../StdPeripheralDriver/src/stm32f10x_exti.c ****   }
+ 236:../StdPeripheralDriver/src/stm32f10x_exti.c ****   else
+ 237:../StdPeripheralDriver/src/stm32f10x_exti.c ****   {
+ 238:../StdPeripheralDriver/src/stm32f10x_exti.c ****     bitstatus = RESET;
+ 18016              		.loc 1 238 0
+ 18017 003c 4FF00003 		mov	r3, #0
+ 18018 0040 FB73     		strb	r3, [r7, #15]
+ 18019              	.L24:
+ 239:../StdPeripheralDriver/src/stm32f10x_exti.c ****   }
+ 240:../StdPeripheralDriver/src/stm32f10x_exti.c ****   return bitstatus;
+ 18020              		.loc 1 240 0
+ 18021 0042 FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 241:../StdPeripheralDriver/src/stm32f10x_exti.c **** }
+ 18022              		.loc 1 241 0
+ 18023 0044 1846     		mov	r0, r3
+ 18024 0046 07F11407 		add	r7, r7, #20
+ 18025 004a BD46     		mov	sp, r7
+ 18026 004c 80BC     		pop	{r7}
+ 18027 004e 7047     		bx	lr
+ 18028              	.L26:
+ 18029              		.align	2
+ 18030              	.L25:
+ 18031 0050 00040140 		.word	1073808384
+ 18032              		.cfi_endproc
+ 18033              	.LFE35:
+ 18035              		.section	.text.EXTI_ClearITPendingBit,"ax",%progbits
+ 18036              		.align	2
+ 18037              		.global	EXTI_ClearITPendingBit
+ 18038              		.thumb
+ 18039              		.thumb_func
+ 18041              	EXTI_ClearITPendingBit:
+ 18042              	.LFB36:
+ 242:../StdPeripheralDriver/src/stm32f10x_exti.c **** 
+ 243:../StdPeripheralDriver/src/stm32f10x_exti.c **** /**
+ 244:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @brief  Clears the EXTI's line pending bits.
+ 245:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @param  EXTI_Line: specifies the EXTI lines to clear.
+ 246:../StdPeripheralDriver/src/stm32f10x_exti.c ****   *   This parameter can be any combination of EXTI_Linex where x can be (0..19).
+ 247:../StdPeripheralDriver/src/stm32f10x_exti.c ****   * @retval None
+ 248:../StdPeripheralDriver/src/stm32f10x_exti.c ****   */
+ 249:../StdPeripheralDriver/src/stm32f10x_exti.c **** void EXTI_ClearITPendingBit(uint32_t EXTI_Line)
+ 250:../StdPeripheralDriver/src/stm32f10x_exti.c **** {
+ 18043              		.loc 1 250 0
+ 18044              		.cfi_startproc
+ 18045              		@ args = 0, pretend = 0, frame = 8
+ 18046              		@ frame_needed = 1, uses_anonymous_args = 0
+ 18047              		@ link register save eliminated.
+ 18048 0000 80B4     		push	{r7}
+ 18049              	.LCFI20:
+ 18050              		.cfi_def_cfa_offset 4
+ 18051 0002 83B0     		sub	sp, sp, #12
+ 18052              	.LCFI21:
+ 18053              		.cfi_def_cfa_offset 16
+ 18054 0004 00AF     		add	r7, sp, #0
+ 18055              		.cfi_offset 7, -4
+ 18056              	.LCFI22:
+ 18057              		.cfi_def_cfa_register 7
+ 18058 0006 7860     		str	r0, [r7, #4]
+ 251:../StdPeripheralDriver/src/stm32f10x_exti.c ****   /* Check the parameters */
+ 252:../StdPeripheralDriver/src/stm32f10x_exti.c ****   assert_param(IS_EXTI_LINE(EXTI_Line));
+ 253:../StdPeripheralDriver/src/stm32f10x_exti.c ****   
+ 254:../StdPeripheralDriver/src/stm32f10x_exti.c ****   EXTI->PR = EXTI_Line;
+ 18059              		.loc 1 254 0
+ 18060 0008 034B     		ldr	r3, .L28
+ 18061 000a 7A68     		ldr	r2, [r7, #4]
+ 18062 000c 5A61     		str	r2, [r3, #20]
+ 255:../StdPeripheralDriver/src/stm32f10x_exti.c **** }
+ 18063              		.loc 1 255 0
+ 18064 000e 07F10C07 		add	r7, r7, #12
+ 18065 0012 BD46     		mov	sp, r7
+ 18066 0014 80BC     		pop	{r7}
+ 18067 0016 7047     		bx	lr
+ 18068              	.L29:
+ 18069              		.align	2
+ 18070              	.L28:
+ 18071 0018 00040140 		.word	1073808384
+ 18072              		.cfi_endproc
+ 18073              	.LFE36:
+ 18075              		.text
+ 18076              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 stm32f10x_exti.c
+     /tmp/cc6SSDI8.s:17569  .text.EXTI_DeInit:00000000 $t
+     /tmp/cc6SSDI8.s:17574  .text.EXTI_DeInit:00000000 EXTI_DeInit
+     /tmp/cc6SSDI8.s:17615  .text.EXTI_DeInit:00000030 $d
+     /tmp/cc6SSDI8.s:17621  .text.EXTI_Init:00000000 $t
+     /tmp/cc6SSDI8.s:17626  .text.EXTI_Init:00000000 EXTI_Init
+     /tmp/cc6SSDI8.s:17771  .text.EXTI_Init:000000f8 $d
+     /tmp/cc6SSDI8.s:17776  .text.EXTI_StructInit:00000000 $t
+     /tmp/cc6SSDI8.s:17781  .text.EXTI_StructInit:00000000 EXTI_StructInit
+     /tmp/cc6SSDI8.s:17824  .text.EXTI_GenerateSWInterrupt:00000000 $t
+     /tmp/cc6SSDI8.s:17829  .text.EXTI_GenerateSWInterrupt:00000000 EXTI_GenerateSWInterrupt
+     /tmp/cc6SSDI8.s:17862  .text.EXTI_GenerateSWInterrupt:00000020 $d
+     /tmp/cc6SSDI8.s:17867  .text.EXTI_GetFlagStatus:00000000 $t
+     /tmp/cc6SSDI8.s:17872  .text.EXTI_GetFlagStatus:00000000 EXTI_GetFlagStatus
+     /tmp/cc6SSDI8.s:17920  .text.EXTI_GetFlagStatus:00000038 $d
+     /tmp/cc6SSDI8.s:17925  .text.EXTI_ClearFlag:00000000 $t
+     /tmp/cc6SSDI8.s:17930  .text.EXTI_ClearFlag:00000000 EXTI_ClearFlag
+     /tmp/cc6SSDI8.s:17960  .text.EXTI_ClearFlag:00000018 $d
+     /tmp/cc6SSDI8.s:17965  .text.EXTI_GetITStatus:00000000 $t
+     /tmp/cc6SSDI8.s:17970  .text.EXTI_GetITStatus:00000000 EXTI_GetITStatus
+     /tmp/cc6SSDI8.s:18031  .text.EXTI_GetITStatus:00000050 $d
+     /tmp/cc6SSDI8.s:18036  .text.EXTI_ClearITPendingBit:00000000 $t
+     /tmp/cc6SSDI8.s:18041  .text.EXTI_ClearITPendingBit:00000000 EXTI_ClearITPendingBit
+     /tmp/cc6SSDI8.s:18071  .text.EXTI_ClearITPendingBit:00000018 $d
+                     .debug_frame:00000010 $d
+
+NO UNDEFINED SYMBOLS

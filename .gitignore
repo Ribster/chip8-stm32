@@ -59,3 +59,10 @@ eagle.epf
 *.info
 
 *.eps
+
+# Ignore eclipse directory
+.metadata/
+.plugins/
+
+# Own ignore
+*.*~

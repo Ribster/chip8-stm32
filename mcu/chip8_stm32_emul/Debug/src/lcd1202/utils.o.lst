@@ -1,0 +1,750 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 6
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"utils.c"
+  23              	.Ltext0:
+  24              		.file 1 "../src/lcd1202/utils.c"
+ 1824              		.align	2
+ 1827              	power10:
+ 1828 0000 00CA9A3B 		.word	1000000000
+ 1829 0004 00E1F505 		.word	100000000
+ 1830 0008 80969800 		.word	10000000
+ 1831 000c 40420F00 		.word	1000000
+ 1832 0010 A0860100 		.word	100000
+ 1833 0014 10270000 		.word	10000
+ 1834 0018 E8030000 		.word	1000
+ 1835 001c 64000000 		.word	100
+ 1836 0020 0A000000 		.word	10
+ 1837              		.section	.text.numericLength,"ax",%progbits
+ 1838              		.align	2
+ 1839              		.global	numericLength
+ 1840              		.thumb
+ 1841              		.thumb_func
+ 1843              	numericLength:
+ 1844              	.LFB0:
+   1:../src/lcd1202/utils.c **** /***
+   2:../src/lcd1202/utils.c ****  *
+   3:../src/lcd1202/utils.c ****  * Date: 2010-04-30
+   4:../src/lcd1202/utils.c ****  * Author: Ivan A-R <ivan@tuxotronic.org>
+   5:../src/lcd1202/utils.c ****  *
+   6:../src/lcd1202/utils.c ****  */
+   7:../src/lcd1202/utils.c **** 
+   8:../src/lcd1202/utils.c **** #include "utils.h"
+   9:../src/lcd1202/utils.c **** 
+  10:../src/lcd1202/utils.c **** /*
+  11:../src/lcd1202/utils.c ****  * Some functions
+  12:../src/lcd1202/utils.c ****  */
+  13:../src/lcd1202/utils.c **** 
+  14:../src/lcd1202/utils.c **** const uint32_t power10[POWER10_SIZE] = {
+  15:../src/lcd1202/utils.c ****     1000000000,
+  16:../src/lcd1202/utils.c ****     100000000,
+  17:../src/lcd1202/utils.c ****     10000000,
+  18:../src/lcd1202/utils.c ****     1000000,
+  19:../src/lcd1202/utils.c ****     100000,
+  20:../src/lcd1202/utils.c ****     10000,
+  21:../src/lcd1202/utils.c ****     1000,
+  22:../src/lcd1202/utils.c ****     100,
+  23:../src/lcd1202/utils.c ****     10,
+  24:../src/lcd1202/utils.c **** };
+  25:../src/lcd1202/utils.c **** 
+  26:../src/lcd1202/utils.c **** int numericLength(int32_t v)
+  27:../src/lcd1202/utils.c **** {
+ 1845              		.loc 1 27 0
+ 1846              		.cfi_startproc
+ 1847              		@ args = 0, pretend = 0, frame = 16
+ 1848              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1849              		@ link register save eliminated.
+ 1850 0000 80B4     		push	{r7}
+ 1851              	.LCFI0:
+ 1852              		.cfi_def_cfa_offset 4
+ 1853 0002 85B0     		sub	sp, sp, #20
+ 1854              	.LCFI1:
+ 1855              		.cfi_def_cfa_offset 24
+ 1856 0004 00AF     		add	r7, sp, #0
+ 1857              		.cfi_offset 7, -4
+ 1858              	.LCFI2:
+ 1859              		.cfi_def_cfa_register 7
+ 1860 0006 7860     		str	r0, [r7, #4]
+  28:../src/lcd1202/utils.c ****     int lng = 1;
+ 1861              		.loc 1 28 0
+ 1862 0008 4FF00103 		mov	r3, #1
+ 1863 000c FB60     		str	r3, [r7, #12]
+  29:../src/lcd1202/utils.c ****     if(v < 0)
+ 1864              		.loc 1 29 0
+ 1865 000e 7B68     		ldr	r3, [r7, #4]
+ 1866 0010 002B     		cmp	r3, #0
+ 1867 0012 07DA     		bge	.L2
+  30:../src/lcd1202/utils.c ****     {
+  31:../src/lcd1202/utils.c ****         lng++;
+ 1868              		.loc 1 31 0
+ 1869 0014 FB68     		ldr	r3, [r7, #12]
+ 1870 0016 03F10103 		add	r3, r3, #1
+ 1871 001a FB60     		str	r3, [r7, #12]
+  32:../src/lcd1202/utils.c ****         v = -v;
+ 1872              		.loc 1 32 0
+ 1873 001c 7B68     		ldr	r3, [r7, #4]
+ 1874 001e C3F10003 		rsb	r3, r3, #0
+ 1875 0022 7B60     		str	r3, [r7, #4]
+ 1876              	.L2:
+  33:../src/lcd1202/utils.c ****     }
+  34:../src/lcd1202/utils.c ****     int i;
+  35:../src/lcd1202/utils.c ****     for(i=(sizeof(power10)/sizeof(power10[0])-1); i>=0; i--)
+ 1877              		.loc 1 35 0
+ 1878 0024 4FF00803 		mov	r3, #8
+ 1879 0028 BB60     		str	r3, [r7, #8]
+ 1880 002a 0EE0     		b	.L3
+ 1881              	.L6:
+  36:../src/lcd1202/utils.c ****     {
+  37:../src/lcd1202/utils.c ****         if((uint32_t)v < power10[i]) break;
+ 1882              		.loc 1 37 0
+ 1883 002c 7A68     		ldr	r2, [r7, #4]
+ 1884 002e 0D4B     		ldr	r3, .L8
+ 1885 0030 B968     		ldr	r1, [r7, #8]
+ 1886 0032 53F82130 		ldr	r3, [r3, r1, lsl #2]
+ 1887 0036 9A42     		cmp	r2, r3
+ 1888 0038 0BD3     		bcc	.L7
+ 1889              	.L4:
+  38:../src/lcd1202/utils.c ****         lng++;
+ 1890              		.loc 1 38 0
+ 1891 003a FB68     		ldr	r3, [r7, #12]
+ 1892 003c 03F10103 		add	r3, r3, #1
+ 1893 0040 FB60     		str	r3, [r7, #12]
+  35:../src/lcd1202/utils.c ****     for(i=(sizeof(power10)/sizeof(power10[0])-1); i>=0; i--)
+ 1894              		.loc 1 35 0
+ 1895 0042 BB68     		ldr	r3, [r7, #8]
+ 1896 0044 03F1FF33 		add	r3, r3, #-1
+ 1897 0048 BB60     		str	r3, [r7, #8]
+ 1898              	.L3:
+  35:../src/lcd1202/utils.c ****     for(i=(sizeof(power10)/sizeof(power10[0])-1); i>=0; i--)
+ 1899              		.loc 1 35 0 is_stmt 0 discriminator 1
+ 1900 004a BB68     		ldr	r3, [r7, #8]
+ 1901 004c 002B     		cmp	r3, #0
+ 1902 004e EDDA     		bge	.L6
+ 1903 0050 00E0     		b	.L5
+ 1904              	.L7:
+  37:../src/lcd1202/utils.c ****         if((uint32_t)v < power10[i]) break;
+ 1905              		.loc 1 37 0 is_stmt 1
+ 1906 0052 00BF     		nop
+ 1907              	.L5:
+  39:../src/lcd1202/utils.c ****     }
+  40:../src/lcd1202/utils.c ****     return lng;
+ 1908              		.loc 1 40 0
+ 1909 0054 FB68     		ldr	r3, [r7, #12]
+  41:../src/lcd1202/utils.c **** }
+ 1910              		.loc 1 41 0
+ 1911 0056 1846     		mov	r0, r3
+ 1912 0058 07F11407 		add	r7, r7, #20
+ 1913 005c BD46     		mov	sp, r7
+ 1914 005e 80BC     		pop	{r7}
+ 1915 0060 7047     		bx	lr
+ 1916              	.L9:
+ 1917 0062 00BF     		.align	2
+ 1918              	.L8:
+ 1919 0064 00000000 		.word	power10
+ 1920              		.cfi_endproc
+ 1921              	.LFE0:
+ 1923              		.section	.text.uitoa,"ax",%progbits
+ 1924              		.align	2
+ 1925              		.global	uitoa
+ 1926              		.thumb
+ 1927              		.thumb_func
+ 1929              	uitoa:
+ 1930              	.LFB1:
+  42:../src/lcd1202/utils.c **** 
+  43:../src/lcd1202/utils.c **** char* uitoa(uint32_t val, char* dest)
+  44:../src/lcd1202/utils.c **** {
+ 1931              		.loc 1 44 0
+ 1932              		.cfi_startproc
+ 1933              		@ args = 0, pretend = 0, frame = 24
+ 1934              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1935              		@ link register save eliminated.
+ 1936 0000 80B4     		push	{r7}
+ 1937              	.LCFI3:
+ 1938              		.cfi_def_cfa_offset 4
+ 1939 0002 87B0     		sub	sp, sp, #28
+ 1940              	.LCFI4:
+ 1941              		.cfi_def_cfa_offset 32
+ 1942 0004 00AF     		add	r7, sp, #0
+ 1943              		.cfi_offset 7, -4
+ 1944              	.LCFI5:
+ 1945              		.cfi_def_cfa_register 7
+ 1946 0006 7860     		str	r0, [r7, #4]
+ 1947 0008 3960     		str	r1, [r7, #0]
+  45:../src/lcd1202/utils.c ****     uint32_t ipow;
+  46:../src/lcd1202/utils.c ****     uint32_t power;
+  47:../src/lcd1202/utils.c ****     char atmp;
+  48:../src/lcd1202/utils.c ****     char prefix_flag = 0;
+ 1948              		.loc 1 48 0
+ 1949 000a 4FF00003 		mov	r3, #0
+ 1950 000e BB74     		strb	r3, [r7, #18]
+  49:../src/lcd1202/utils.c ****     for(ipow=0; ipow<(sizeof(power10)/sizeof(power10[0])); ipow++)
+ 1951              		.loc 1 49 0
+ 1952 0010 4FF00003 		mov	r3, #0
+ 1953 0014 7B61     		str	r3, [r7, #20]
+ 1954 0016 28E0     		b	.L11
+ 1955              	.L16:
+  50:../src/lcd1202/utils.c ****     {
+  51:../src/lcd1202/utils.c ****         atmp = '0';
+ 1956              		.loc 1 51 0
+ 1957 0018 4FF03003 		mov	r3, #48
+ 1958 001c FB74     		strb	r3, [r7, #19]
+  52:../src/lcd1202/utils.c ****         power = power10[ipow];
+ 1959              		.loc 1 52 0
+ 1960 001e 1F4B     		ldr	r3, .L17
+ 1961 0020 7A69     		ldr	r2, [r7, #20]
+ 1962 0022 53F82230 		ldr	r3, [r3, r2, lsl #2]
+ 1963 0026 FB60     		str	r3, [r7, #12]
+  53:../src/lcd1202/utils.c ****         while(val >= power)
+ 1964              		.loc 1 53 0
+ 1965 0028 07E0     		b	.L12
+ 1966              	.L13:
+  54:../src/lcd1202/utils.c ****         {
+  55:../src/lcd1202/utils.c ****             atmp++;
+ 1967              		.loc 1 55 0
+ 1968 002a FB7C     		ldrb	r3, [r7, #19]
+ 1969 002c 03F10103 		add	r3, r3, #1
+ 1970 0030 FB74     		strb	r3, [r7, #19]
+  56:../src/lcd1202/utils.c ****             val -= power;
+ 1971              		.loc 1 56 0
+ 1972 0032 7A68     		ldr	r2, [r7, #4]
+ 1973 0034 FB68     		ldr	r3, [r7, #12]
+ 1974 0036 D31A     		subs	r3, r2, r3
+ 1975 0038 7B60     		str	r3, [r7, #4]
+ 1976              	.L12:
+  53:../src/lcd1202/utils.c ****         while(val >= power)
+ 1977              		.loc 1 53 0 discriminator 1
+ 1978 003a 7A68     		ldr	r2, [r7, #4]
+ 1979 003c FB68     		ldr	r3, [r7, #12]
+ 1980 003e 9A42     		cmp	r2, r3
+ 1981 0040 F3D2     		bcs	.L13
+  57:../src/lcd1202/utils.c ****         }
+  58:../src/lcd1202/utils.c ****         if(atmp > '0')
+ 1982              		.loc 1 58 0
+ 1983 0042 FB7C     		ldrb	r3, [r7, #19]	@ zero_extendqisi2
+ 1984 0044 302B     		cmp	r3, #48
+ 1985 0046 02D9     		bls	.L14
+  59:../src/lcd1202/utils.c ****             prefix_flag = -1;
+ 1986              		.loc 1 59 0
+ 1987 0048 4FF0FF03 		mov	r3, #255
+ 1988 004c BB74     		strb	r3, [r7, #18]
+ 1989              	.L14:
+  60:../src/lcd1202/utils.c ****         if(prefix_flag)
+ 1990              		.loc 1 60 0
+ 1991 004e BB7C     		ldrb	r3, [r7, #18]	@ zero_extendqisi2
+ 1992 0050 002B     		cmp	r3, #0
+ 1993 0052 06D0     		beq	.L15
+  61:../src/lcd1202/utils.c ****             *dest++ = atmp;
+ 1994              		.loc 1 61 0
+ 1995 0054 3B68     		ldr	r3, [r7, #0]
+ 1996 0056 FA7C     		ldrb	r2, [r7, #19]
+ 1997 0058 1A70     		strb	r2, [r3, #0]
+ 1998 005a 3B68     		ldr	r3, [r7, #0]
+ 1999 005c 03F10103 		add	r3, r3, #1
+ 2000 0060 3B60     		str	r3, [r7, #0]
+ 2001              	.L15:
+  49:../src/lcd1202/utils.c ****     for(ipow=0; ipow<(sizeof(power10)/sizeof(power10[0])); ipow++)
+ 2002              		.loc 1 49 0
+ 2003 0062 7B69     		ldr	r3, [r7, #20]
+ 2004 0064 03F10103 		add	r3, r3, #1
+ 2005 0068 7B61     		str	r3, [r7, #20]
+ 2006              	.L11:
+  49:../src/lcd1202/utils.c ****     for(ipow=0; ipow<(sizeof(power10)/sizeof(power10[0])); ipow++)
+ 2007              		.loc 1 49 0 is_stmt 0 discriminator 1
+ 2008 006a 7B69     		ldr	r3, [r7, #20]
+ 2009 006c 082B     		cmp	r3, #8
+ 2010 006e D3D9     		bls	.L16
+  62:../src/lcd1202/utils.c ****     }
+  63:../src/lcd1202/utils.c ****     *dest++ = val+'0';
+ 2011              		.loc 1 63 0 is_stmt 1
+ 2012 0070 7B68     		ldr	r3, [r7, #4]
+ 2013 0072 DBB2     		uxtb	r3, r3
+ 2014 0074 03F13003 		add	r3, r3, #48
+ 2015 0078 DAB2     		uxtb	r2, r3
+ 2016 007a 3B68     		ldr	r3, [r7, #0]
+ 2017 007c 1A70     		strb	r2, [r3, #0]
+ 2018 007e 3B68     		ldr	r3, [r7, #0]
+ 2019 0080 03F10103 		add	r3, r3, #1
+ 2020 0084 3B60     		str	r3, [r7, #0]
+  64:../src/lcd1202/utils.c ****     *dest = 0;
+ 2021              		.loc 1 64 0
+ 2022 0086 3B68     		ldr	r3, [r7, #0]
+ 2023 0088 4FF00002 		mov	r2, #0
+ 2024 008c 1A70     		strb	r2, [r3, #0]
+  65:../src/lcd1202/utils.c ****     return dest;
+ 2025              		.loc 1 65 0
+ 2026 008e 3B68     		ldr	r3, [r7, #0]
+  66:../src/lcd1202/utils.c **** }
+ 2027              		.loc 1 66 0
+ 2028 0090 1846     		mov	r0, r3
+ 2029 0092 07F11C07 		add	r7, r7, #28
+ 2030 0096 BD46     		mov	sp, r7
+ 2031 0098 80BC     		pop	{r7}
+ 2032 009a 7047     		bx	lr
+ 2033              	.L18:
+ 2034              		.align	2
+ 2035              	.L17:
+ 2036 009c 00000000 		.word	power10
+ 2037              		.cfi_endproc
+ 2038              	.LFE1:
+ 2040              		.section	.text.itoa,"ax",%progbits
+ 2041              		.align	2
+ 2042              		.global	itoa
+ 2043              		.thumb
+ 2044              		.thumb_func
+ 2046              	itoa:
+ 2047              	.LFB2:
+  67:../src/lcd1202/utils.c **** 
+  68:../src/lcd1202/utils.c **** char* itoa(int32_t val, char* dest)
+  69:../src/lcd1202/utils.c **** {
+ 2048              		.loc 1 69 0
+ 2049              		.cfi_startproc
+ 2050              		@ args = 0, pretend = 0, frame = 8
+ 2051              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2052 0000 80B5     		push	{r7, lr}
+ 2053              	.LCFI6:
+ 2054              		.cfi_def_cfa_offset 8
+ 2055 0002 82B0     		sub	sp, sp, #8
+ 2056              	.LCFI7:
+ 2057              		.cfi_def_cfa_offset 16
+ 2058 0004 00AF     		add	r7, sp, #0
+ 2059              		.cfi_offset 14, -4
+ 2060              		.cfi_offset 7, -8
+ 2061              	.LCFI8:
+ 2062              		.cfi_def_cfa_register 7
+ 2063 0006 7860     		str	r0, [r7, #4]
+ 2064 0008 3960     		str	r1, [r7, #0]
+  70:../src/lcd1202/utils.c ****     if(val<0)
+ 2065              		.loc 1 70 0
+ 2066 000a 7B68     		ldr	r3, [r7, #4]
+ 2067 000c 002B     		cmp	r3, #0
+ 2068 000e 10DA     		bge	.L20
+  71:../src/lcd1202/utils.c ****     {
+  72:../src/lcd1202/utils.c ****         *dest++ = '-';
+ 2069              		.loc 1 72 0
+ 2070 0010 3B68     		ldr	r3, [r7, #0]
+ 2071 0012 4FF02D02 		mov	r2, #45
+ 2072 0016 1A70     		strb	r2, [r3, #0]
+ 2073 0018 3B68     		ldr	r3, [r7, #0]
+ 2074 001a 03F10103 		add	r3, r3, #1
+ 2075 001e 3B60     		str	r3, [r7, #0]
+  73:../src/lcd1202/utils.c ****         return uitoa(-val, dest);
+ 2076              		.loc 1 73 0
+ 2077 0020 7B68     		ldr	r3, [r7, #4]
+ 2078 0022 C3F10003 		rsb	r3, r3, #0
+ 2079 0026 1846     		mov	r0, r3
+ 2080 0028 3968     		ldr	r1, [r7, #0]
+ 2081 002a FFF7FEFF 		bl	uitoa
+ 2082 002e 0346     		mov	r3, r0
+ 2083 0030 05E0     		b	.L21
+ 2084              	.L20:
+  74:../src/lcd1202/utils.c ****     }
+  75:../src/lcd1202/utils.c ****     else
+  76:../src/lcd1202/utils.c ****         return uitoa(val, dest);
+ 2085              		.loc 1 76 0
+ 2086 0032 7B68     		ldr	r3, [r7, #4]
+ 2087 0034 1846     		mov	r0, r3
+ 2088 0036 3968     		ldr	r1, [r7, #0]
+ 2089 0038 FFF7FEFF 		bl	uitoa
+ 2090 003c 0346     		mov	r3, r0
+ 2091              	.L21:
+  77:../src/lcd1202/utils.c **** }
+ 2092              		.loc 1 77 0
+ 2093 003e 1846     		mov	r0, r3
+ 2094 0040 07F10807 		add	r7, r7, #8
+ 2095 0044 BD46     		mov	sp, r7
+ 2096 0046 80BD     		pop	{r7, pc}
+ 2097              		.cfi_endproc
+ 2098              	.LFE2:
+ 2100              		.section	.text._encHex,"ax",%progbits
+ 2101              		.align	2
+ 2102              		.thumb
+ 2103              		.thumb_func
+ 2105              	_encHex:
+ 2106              	.LFB3:
+  78:../src/lcd1202/utils.c **** 
+  79:../src/lcd1202/utils.c **** static char _encHex(uint8_t v)
+  80:../src/lcd1202/utils.c **** {
+ 2107              		.loc 1 80 0
+ 2108              		.cfi_startproc
+ 2109              		@ args = 0, pretend = 0, frame = 8
+ 2110              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2111              		@ link register save eliminated.
+ 2112 0000 80B4     		push	{r7}
+ 2113              	.LCFI9:
+ 2114              		.cfi_def_cfa_offset 4
+ 2115 0002 83B0     		sub	sp, sp, #12
+ 2116              	.LCFI10:
+ 2117              		.cfi_def_cfa_offset 16
+ 2118 0004 00AF     		add	r7, sp, #0
+ 2119              		.cfi_offset 7, -4
+ 2120              	.LCFI11:
+ 2121              		.cfi_def_cfa_register 7
+ 2122 0006 0346     		mov	r3, r0
+ 2123 0008 FB71     		strb	r3, [r7, #7]
+  81:../src/lcd1202/utils.c ****     if(v<10)
+ 2124              		.loc 1 81 0
+ 2125 000a FB79     		ldrb	r3, [r7, #7]	@ zero_extendqisi2
+ 2126 000c 092B     		cmp	r3, #9
+ 2127 000e 04D8     		bhi	.L23
+  82:../src/lcd1202/utils.c ****         return '0'+v;
+ 2128              		.loc 1 82 0
+ 2129 0010 FB79     		ldrb	r3, [r7, #7]
+ 2130 0012 03F13003 		add	r3, r3, #48
+ 2131 0016 DBB2     		uxtb	r3, r3
+ 2132 0018 03E0     		b	.L24
+ 2133              	.L23:
+  83:../src/lcd1202/utils.c ****     else
+  84:../src/lcd1202/utils.c ****         return 'A'+v-10;
+ 2134              		.loc 1 84 0
+ 2135 001a FB79     		ldrb	r3, [r7, #7]
+ 2136 001c 03F13703 		add	r3, r3, #55
+ 2137 0020 DBB2     		uxtb	r3, r3
+ 2138              	.L24:
+  85:../src/lcd1202/utils.c **** }
+ 2139              		.loc 1 85 0
+ 2140 0022 1846     		mov	r0, r3
+ 2141 0024 07F10C07 		add	r7, r7, #12
+ 2142 0028 BD46     		mov	sp, r7
+ 2143 002a 80BC     		pop	{r7}
+ 2144 002c 7047     		bx	lr
+ 2145              		.cfi_endproc
+ 2146              	.LFE3:
+ 2148 002e 00BF     		.section	.text.uitox,"ax",%progbits
+ 2149              		.align	2
+ 2150              		.global	uitox
+ 2151              		.thumb
+ 2152              		.thumb_func
+ 2154              	uitox:
+ 2155              	.LFB4:
+  86:../src/lcd1202/utils.c **** 
+  87:../src/lcd1202/utils.c **** char* uitox(uint32_t val, char* dest, int digits)
+  88:../src/lcd1202/utils.c **** {
+ 2156              		.loc 1 88 0
+ 2157              		.cfi_startproc
+ 2158              		@ args = 0, pretend = 0, frame = 16
+ 2159              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2160 0000 80B5     		push	{r7, lr}
+ 2161              	.LCFI12:
+ 2162              		.cfi_def_cfa_offset 8
+ 2163 0002 84B0     		sub	sp, sp, #16
+ 2164              	.LCFI13:
+ 2165              		.cfi_def_cfa_offset 24
+ 2166 0004 00AF     		add	r7, sp, #0
+ 2167              		.cfi_offset 14, -4
+ 2168              		.cfi_offset 7, -8
+ 2169              	.LCFI14:
+ 2170              		.cfi_def_cfa_register 7
+ 2171 0006 F860     		str	r0, [r7, #12]
+ 2172 0008 B960     		str	r1, [r7, #8]
+ 2173 000a 7A60     		str	r2, [r7, #4]
+  89:../src/lcd1202/utils.c ****     if(digits >= 8) *dest++ = _encHex((val>>28) & 0x0F);
+ 2174              		.loc 1 89 0
+ 2175 000c 7B68     		ldr	r3, [r7, #4]
+ 2176 000e 072B     		cmp	r3, #7
+ 2177 0010 0EDD     		ble	.L26
+ 2178              		.loc 1 89 0 is_stmt 0 discriminator 1
+ 2179 0012 FB68     		ldr	r3, [r7, #12]
+ 2180 0014 4FEA1373 		lsr	r3, r3, #28
+ 2181 0018 DBB2     		uxtb	r3, r3
+ 2182 001a 1846     		mov	r0, r3
+ 2183 001c FFF7FEFF 		bl	_encHex
+ 2184 0020 0346     		mov	r3, r0
+ 2185 0022 1A46     		mov	r2, r3
+ 2186 0024 BB68     		ldr	r3, [r7, #8]
+ 2187 0026 1A70     		strb	r2, [r3, #0]
+ 2188 0028 BB68     		ldr	r3, [r7, #8]
+ 2189 002a 03F10103 		add	r3, r3, #1
+ 2190 002e BB60     		str	r3, [r7, #8]
+ 2191              	.L26:
+  90:../src/lcd1202/utils.c ****     if(digits >= 7) *dest++ = _encHex((val>>24) & 0x0F);
+ 2192              		.loc 1 90 0 is_stmt 1
+ 2193 0030 7B68     		ldr	r3, [r7, #4]
+ 2194 0032 062B     		cmp	r3, #6
+ 2195 0034 11DD     		ble	.L27
+ 2196              		.loc 1 90 0 is_stmt 0 discriminator 1
+ 2197 0036 FB68     		ldr	r3, [r7, #12]
+ 2198 0038 4FEA1363 		lsr	r3, r3, #24
+ 2199 003c DBB2     		uxtb	r3, r3
+ 2200 003e 03F00F03 		and	r3, r3, #15
+ 2201 0042 DBB2     		uxtb	r3, r3
+ 2202 0044 1846     		mov	r0, r3
+ 2203 0046 FFF7FEFF 		bl	_encHex
+ 2204 004a 0346     		mov	r3, r0
+ 2205 004c 1A46     		mov	r2, r3
+ 2206 004e BB68     		ldr	r3, [r7, #8]
+ 2207 0050 1A70     		strb	r2, [r3, #0]
+ 2208 0052 BB68     		ldr	r3, [r7, #8]
+ 2209 0054 03F10103 		add	r3, r3, #1
+ 2210 0058 BB60     		str	r3, [r7, #8]
+ 2211              	.L27:
+  91:../src/lcd1202/utils.c ****     if(digits >= 6) *dest++ = _encHex((val>>20) & 0x0F);
+ 2212              		.loc 1 91 0 is_stmt 1
+ 2213 005a 7B68     		ldr	r3, [r7, #4]
+ 2214 005c 052B     		cmp	r3, #5
+ 2215 005e 11DD     		ble	.L28
+ 2216              		.loc 1 91 0 is_stmt 0 discriminator 1
+ 2217 0060 FB68     		ldr	r3, [r7, #12]
+ 2218 0062 4FEA1353 		lsr	r3, r3, #20
+ 2219 0066 DBB2     		uxtb	r3, r3
+ 2220 0068 03F00F03 		and	r3, r3, #15
+ 2221 006c DBB2     		uxtb	r3, r3
+ 2222 006e 1846     		mov	r0, r3
+ 2223 0070 FFF7FEFF 		bl	_encHex
+ 2224 0074 0346     		mov	r3, r0
+ 2225 0076 1A46     		mov	r2, r3
+ 2226 0078 BB68     		ldr	r3, [r7, #8]
+ 2227 007a 1A70     		strb	r2, [r3, #0]
+ 2228 007c BB68     		ldr	r3, [r7, #8]
+ 2229 007e 03F10103 		add	r3, r3, #1
+ 2230 0082 BB60     		str	r3, [r7, #8]
+ 2231              	.L28:
+  92:../src/lcd1202/utils.c ****     if(digits >= 5) *dest++ = _encHex((val>>16) & 0x0F);
+ 2232              		.loc 1 92 0 is_stmt 1
+ 2233 0084 7B68     		ldr	r3, [r7, #4]
+ 2234 0086 042B     		cmp	r3, #4
+ 2235 0088 11DD     		ble	.L29
+ 2236              		.loc 1 92 0 is_stmt 0 discriminator 1
+ 2237 008a FB68     		ldr	r3, [r7, #12]
+ 2238 008c 4FEA1343 		lsr	r3, r3, #16
+ 2239 0090 DBB2     		uxtb	r3, r3
+ 2240 0092 03F00F03 		and	r3, r3, #15
+ 2241 0096 DBB2     		uxtb	r3, r3
+ 2242 0098 1846     		mov	r0, r3
+ 2243 009a FFF7FEFF 		bl	_encHex
+ 2244 009e 0346     		mov	r3, r0
+ 2245 00a0 1A46     		mov	r2, r3
+ 2246 00a2 BB68     		ldr	r3, [r7, #8]
+ 2247 00a4 1A70     		strb	r2, [r3, #0]
+ 2248 00a6 BB68     		ldr	r3, [r7, #8]
+ 2249 00a8 03F10103 		add	r3, r3, #1
+ 2250 00ac BB60     		str	r3, [r7, #8]
+ 2251              	.L29:
+  93:../src/lcd1202/utils.c ****     if(digits >= 4) *dest++ = _encHex((val>>12) & 0x0F);
+ 2252              		.loc 1 93 0 is_stmt 1
+ 2253 00ae 7B68     		ldr	r3, [r7, #4]
+ 2254 00b0 032B     		cmp	r3, #3
+ 2255 00b2 11DD     		ble	.L30
+ 2256              		.loc 1 93 0 is_stmt 0 discriminator 1
+ 2257 00b4 FB68     		ldr	r3, [r7, #12]
+ 2258 00b6 4FEA1333 		lsr	r3, r3, #12
+ 2259 00ba DBB2     		uxtb	r3, r3
+ 2260 00bc 03F00F03 		and	r3, r3, #15
+ 2261 00c0 DBB2     		uxtb	r3, r3
+ 2262 00c2 1846     		mov	r0, r3
+ 2263 00c4 FFF7FEFF 		bl	_encHex
+ 2264 00c8 0346     		mov	r3, r0
+ 2265 00ca 1A46     		mov	r2, r3
+ 2266 00cc BB68     		ldr	r3, [r7, #8]
+ 2267 00ce 1A70     		strb	r2, [r3, #0]
+ 2268 00d0 BB68     		ldr	r3, [r7, #8]
+ 2269 00d2 03F10103 		add	r3, r3, #1
+ 2270 00d6 BB60     		str	r3, [r7, #8]
+ 2271              	.L30:
+  94:../src/lcd1202/utils.c ****     if(digits >= 3) *dest++ = _encHex((val>>8) & 0x0F);
+ 2272              		.loc 1 94 0 is_stmt 1
+ 2273 00d8 7B68     		ldr	r3, [r7, #4]
+ 2274 00da 022B     		cmp	r3, #2
+ 2275 00dc 11DD     		ble	.L31
+ 2276              		.loc 1 94 0 is_stmt 0 discriminator 1
+ 2277 00de FB68     		ldr	r3, [r7, #12]
+ 2278 00e0 4FEA1323 		lsr	r3, r3, #8
+ 2279 00e4 DBB2     		uxtb	r3, r3
+ 2280 00e6 03F00F03 		and	r3, r3, #15
+ 2281 00ea DBB2     		uxtb	r3, r3
+ 2282 00ec 1846     		mov	r0, r3
+ 2283 00ee FFF7FEFF 		bl	_encHex
+ 2284 00f2 0346     		mov	r3, r0
+ 2285 00f4 1A46     		mov	r2, r3
+ 2286 00f6 BB68     		ldr	r3, [r7, #8]
+ 2287 00f8 1A70     		strb	r2, [r3, #0]
+ 2288 00fa BB68     		ldr	r3, [r7, #8]
+ 2289 00fc 03F10103 		add	r3, r3, #1
+ 2290 0100 BB60     		str	r3, [r7, #8]
+ 2291              	.L31:
+  95:../src/lcd1202/utils.c ****     if(digits >= 2) *dest++ = _encHex((val>>4) & 0x0F);
+ 2292              		.loc 1 95 0 is_stmt 1
+ 2293 0102 7B68     		ldr	r3, [r7, #4]
+ 2294 0104 012B     		cmp	r3, #1
+ 2295 0106 11DD     		ble	.L32
+ 2296              		.loc 1 95 0 is_stmt 0 discriminator 1
+ 2297 0108 FB68     		ldr	r3, [r7, #12]
+ 2298 010a 4FEA1313 		lsr	r3, r3, #4
+ 2299 010e DBB2     		uxtb	r3, r3
+ 2300 0110 03F00F03 		and	r3, r3, #15
+ 2301 0114 DBB2     		uxtb	r3, r3
+ 2302 0116 1846     		mov	r0, r3
+ 2303 0118 FFF7FEFF 		bl	_encHex
+ 2304 011c 0346     		mov	r3, r0
+ 2305 011e 1A46     		mov	r2, r3
+ 2306 0120 BB68     		ldr	r3, [r7, #8]
+ 2307 0122 1A70     		strb	r2, [r3, #0]
+ 2308 0124 BB68     		ldr	r3, [r7, #8]
+ 2309 0126 03F10103 		add	r3, r3, #1
+ 2310 012a BB60     		str	r3, [r7, #8]
+ 2311              	.L32:
+  96:../src/lcd1202/utils.c ****     *dest++ = _encHex((val>>0) & 0x0F);
+ 2312              		.loc 1 96 0 is_stmt 1
+ 2313 012c FB68     		ldr	r3, [r7, #12]
+ 2314 012e DBB2     		uxtb	r3, r3
+ 2315 0130 03F00F03 		and	r3, r3, #15
+ 2316 0134 DBB2     		uxtb	r3, r3
+ 2317 0136 1846     		mov	r0, r3
+ 2318 0138 FFF7FEFF 		bl	_encHex
+ 2319 013c 0346     		mov	r3, r0
+ 2320 013e 1A46     		mov	r2, r3
+ 2321 0140 BB68     		ldr	r3, [r7, #8]
+ 2322 0142 1A70     		strb	r2, [r3, #0]
+ 2323 0144 BB68     		ldr	r3, [r7, #8]
+ 2324 0146 03F10103 		add	r3, r3, #1
+ 2325 014a BB60     		str	r3, [r7, #8]
+  97:../src/lcd1202/utils.c ****     *dest = 0;
+ 2326              		.loc 1 97 0
+ 2327 014c BB68     		ldr	r3, [r7, #8]
+ 2328 014e 4FF00002 		mov	r2, #0
+ 2329 0152 1A70     		strb	r2, [r3, #0]
+  98:../src/lcd1202/utils.c ****     return dest;
+ 2330              		.loc 1 98 0
+ 2331 0154 BB68     		ldr	r3, [r7, #8]
+  99:../src/lcd1202/utils.c **** }
+ 2332              		.loc 1 99 0
+ 2333 0156 1846     		mov	r0, r3
+ 2334 0158 07F11007 		add	r7, r7, #16
+ 2335 015c BD46     		mov	sp, r7
+ 2336 015e 80BD     		pop	{r7, pc}
+ 2337              		.cfi_endproc
+ 2338              	.LFE4:
+ 2340              		.section	.text.crc16,"ax",%progbits
+ 2341              		.align	2
+ 2342              		.global	crc16
+ 2343              		.thumb
+ 2344              		.thumb_func
+ 2346              	crc16:
+ 2347              	.LFB5:
+ 100:../src/lcd1202/utils.c **** 
+ 101:../src/lcd1202/utils.c **** 
+ 102:../src/lcd1202/utils.c **** #define CRC_POLYNOME 0xA001 //corresponds to X^16+X^15+X^2+X^0
+ 103:../src/lcd1202/utils.c **** crc16_t crc16(crc16_t crc, unsigned char data)
+ 104:../src/lcd1202/utils.c **** {
+ 2348              		.loc 1 104 0
+ 2349              		.cfi_startproc
+ 2350              		@ args = 0, pretend = 0, frame = 16
+ 2351              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2352              		@ link register save eliminated.
+ 2353 0000 80B4     		push	{r7}
+ 2354              	.LCFI15:
+ 2355              		.cfi_def_cfa_offset 4
+ 2356 0002 85B0     		sub	sp, sp, #20
+ 2357              	.LCFI16:
+ 2358              		.cfi_def_cfa_offset 24
+ 2359 0004 00AF     		add	r7, sp, #0
+ 2360              		.cfi_offset 7, -4
+ 2361              	.LCFI17:
+ 2362              		.cfi_def_cfa_register 7
+ 2363 0006 0246     		mov	r2, r0
+ 2364 0008 0B46     		mov	r3, r1
+ 2365 000a FA80     		strh	r2, [r7, #6]	@ movhi
+ 2366 000c 7B71     		strb	r3, [r7, #5]
+ 105:../src/lcd1202/utils.c ****     char i;
+ 106:../src/lcd1202/utils.c ****     crc16_t res;
+ 107:../src/lcd1202/utils.c ****     //char common_flags;
+ 108:../src/lcd1202/utils.c **** 
+ 109:../src/lcd1202/utils.c ****     res = crc ^ (uint16_t)data;
+ 2367              		.loc 1 109 0
+ 2368 000e 7B79     		ldrb	r3, [r7, #5]	@ zero_extendqisi2
+ 2369 0010 9AB2     		uxth	r2, r3
+ 2370 0012 FB88     		ldrh	r3, [r7, #6]	@ movhi
+ 2371 0014 82EA0303 		eor	r3, r2, r3
+ 2372 0018 BB81     		strh	r3, [r7, #12]	@ movhi
+ 110:../src/lcd1202/utils.c **** 
+ 111:../src/lcd1202/utils.c ****     for(i=0; i<8; i++)
+ 2373              		.loc 1 111 0
+ 2374 001a 4FF00003 		mov	r3, #0
+ 2375 001e FB73     		strb	r3, [r7, #15]
+ 2376 0020 16E0     		b	.L34
+ 2377              	.L37:
+ 112:../src/lcd1202/utils.c ****     {
+ 113:../src/lcd1202/utils.c ****         if(res % 2)
+ 2378              		.loc 1 113 0
+ 2379 0022 BB89     		ldrh	r3, [r7, #12]
+ 2380 0024 03F00103 		and	r3, r3, #1
+ 2381 0028 DBB2     		uxtb	r3, r3
+ 2382 002a 002B     		cmp	r3, #0
+ 2383 002c 08D0     		beq	.L35
+ 114:../src/lcd1202/utils.c ****             res = (res>>1) ^ CRC_POLYNOME;
+ 2384              		.loc 1 114 0
+ 2385 002e BB89     		ldrh	r3, [r7, #12]
+ 2386 0030 4FEA5303 		lsr	r3, r3, #1
+ 2387 0034 9AB2     		uxth	r2, r3
+ 2388 0036 0B4B     		ldr	r3, .L38
+ 2389 0038 82EA0303 		eor	r3, r2, r3
+ 2390 003c BB81     		strh	r3, [r7, #12]	@ movhi
+ 2391 003e 03E0     		b	.L36
+ 2392              	.L35:
+ 115:../src/lcd1202/utils.c ****         else
+ 116:../src/lcd1202/utils.c ****             res >>= 1;
+ 2393              		.loc 1 116 0
+ 2394 0040 BB89     		ldrh	r3, [r7, #12]
+ 2395 0042 4FEA5303 		lsr	r3, r3, #1
+ 2396 0046 BB81     		strh	r3, [r7, #12]	@ movhi
+ 2397              	.L36:
+ 111:../src/lcd1202/utils.c ****     for(i=0; i<8; i++)
+ 2398              		.loc 1 111 0
+ 2399 0048 FB7B     		ldrb	r3, [r7, #15]
+ 2400 004a 03F10103 		add	r3, r3, #1
+ 2401 004e FB73     		strb	r3, [r7, #15]
+ 2402              	.L34:
+ 111:../src/lcd1202/utils.c ****     for(i=0; i<8; i++)
+ 2403              		.loc 1 111 0 is_stmt 0 discriminator 1
+ 2404 0050 FB7B     		ldrb	r3, [r7, #15]	@ zero_extendqisi2
+ 2405 0052 072B     		cmp	r3, #7
+ 2406 0054 E5D9     		bls	.L37
+ 117:../src/lcd1202/utils.c ****     }
+ 118:../src/lcd1202/utils.c ****     return res;
+ 2407              		.loc 1 118 0 is_stmt 1
+ 2408 0056 BB89     		ldrh	r3, [r7, #12]
+ 119:../src/lcd1202/utils.c **** }
+ 2409              		.loc 1 119 0
+ 2410 0058 1846     		mov	r0, r3
+ 2411 005a 07F11407 		add	r7, r7, #20
+ 2412 005e BD46     		mov	sp, r7
+ 2413 0060 80BC     		pop	{r7}
+ 2414 0062 7047     		bx	lr
+ 2415              	.L39:
+ 2416              		.align	2
+ 2417              	.L38:
+ 2418 0064 01A0FFFF 		.word	-24575
+ 2419              		.cfi_endproc
+ 2420              	.LFE5:
+ 2422              		.text
+ 2423              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 utils.c
+     /tmp/ccGmYjxd.s:1827   .rodata.power10:00000000 power10
+     /tmp/ccGmYjxd.s:1824   .rodata.power10:00000000 $d
+     /tmp/ccGmYjxd.s:1838   .text.numericLength:00000000 $t
+     /tmp/ccGmYjxd.s:1843   .text.numericLength:00000000 numericLength
+     /tmp/ccGmYjxd.s:1919   .text.numericLength:00000064 $d
+     /tmp/ccGmYjxd.s:1924   .text.uitoa:00000000 $t
+     /tmp/ccGmYjxd.s:1929   .text.uitoa:00000000 uitoa
+     /tmp/ccGmYjxd.s:2036   .text.uitoa:0000009c $d
+     /tmp/ccGmYjxd.s:2041   .text.itoa:00000000 $t
+     /tmp/ccGmYjxd.s:2046   .text.itoa:00000000 itoa
+     /tmp/ccGmYjxd.s:2101   .text._encHex:00000000 $t
+     /tmp/ccGmYjxd.s:2105   .text._encHex:00000000 _encHex
+     /tmp/ccGmYjxd.s:2149   .text.uitox:00000000 $t
+     /tmp/ccGmYjxd.s:2154   .text.uitox:00000000 uitox
+     /tmp/ccGmYjxd.s:2341   .text.crc16:00000000 $t
+     /tmp/ccGmYjxd.s:2346   .text.crc16:00000000 crc16
+     /tmp/ccGmYjxd.s:2418   .text.crc16:00000064 $d
+                     .debug_frame:00000010 $d
+
+NO UNDEFINED SYMBOLS

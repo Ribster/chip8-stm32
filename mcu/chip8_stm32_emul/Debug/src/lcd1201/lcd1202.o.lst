@@ -1,0 +1,3781 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"lcd1202.c"
+  23              	.Ltext0:
+  24              		.file 1 "../src/lcd1201/lcd1202.c"
+ 17442              		.align	1
+ 17443              		.thumb
+ 17444              		.thumb_func
+ 17446              	lcd_write_byte:
+ 17447              	.LFB31:
+   1:../src/lcd1201/lcd1202_hw.h **** /*
+   2:../src/lcd1201/lcd1202_hw.h ****  * Nokia 1202/1203/1280 LCD display driver
+   3:../src/lcd1201/lcd1202_hw.h ****  * MCU depend part
+   4:../src/lcd1201/lcd1202_hw.h ****  *
+   5:../src/lcd1201/lcd1202_hw.h ****  * (CC) 2011 Ivan A-R <ivan@tuxotronic.org>
+   6:../src/lcd1201/lcd1202_hw.h ****  *
+   7:../src/lcd1201/lcd1202_hw.h ****  * This driver use USART (9-bit) mode write to display.
+   8:../src/lcd1201/lcd1202_hw.h ****  * Thanx for idea
+   9:../src/lcd1201/lcd1202_hw.h ****  *     http://we.easyelectronics.ru/OlegG/ispolzovanie-usart-stm32-dlya-upravleniya-lcd-nokia-1202.
+  10:../src/lcd1201/lcd1202_hw.h ****  */
+  11:../src/lcd1201/lcd1202_hw.h **** 
+  12:../src/lcd1201/lcd1202_hw.h **** #ifndef _LCD1202_HW_H_
+  13:../src/lcd1201/lcd1202_hw.h **** #define _LCD1202_HW_H_
+  14:../src/lcd1201/lcd1202_hw.h **** 
+  15:../src/lcd1201/lcd1202_hw.h **** #ifndef _LCD1202_C_
+  16:../src/lcd1201/lcd1202_hw.h **** #error Must be included only from lcd1202.c
+  17:../src/lcd1201/lcd1202_hw.h **** #endif
+  18:../src/lcd1201/lcd1202_hw.h **** 
+  19:../src/lcd1201/lcd1202_hw.h **** /*
+  20:../src/lcd1201/lcd1202_hw.h **** void lcd_init_gpio(void);
+  21:../src/lcd1201/lcd1202_hw.h **** void lcd_reset(void);
+  22:../src/lcd1201/lcd1202_hw.h **** void lcd_write_byte(uint8_t data, uint8_t rc);
+  23:../src/lcd1201/lcd1202_hw.h **** */
+  24:../src/lcd1201/lcd1202_hw.h **** 
+  25:../src/lcd1201/lcd1202_hw.h **** 
+  26:../src/lcd1201/lcd1202_hw.h **** 
+  27:../src/lcd1201/lcd1202_hw.h **** /* MCU Hardware depend functions */
+  28:../src/lcd1201/lcd1202_hw.h **** /* STM32 USART 1 */
+  29:../src/lcd1201/lcd1202_hw.h **** 
+  30:../src/lcd1201/lcd1202_hw.h **** #define lcd_rst_mark()
+  31:../src/lcd1201/lcd1202_hw.h **** #define lcd_rst_release()
+  32:../src/lcd1201/lcd1202_hw.h **** 
+  33:../src/lcd1201/lcd1202_hw.h **** #define lcd_cs_mark()    GPIOA->BRR  = (1<<10)
+  34:../src/lcd1201/lcd1202_hw.h **** #define lcd_cs_release() do { \
+  35:../src/lcd1201/lcd1202_hw.h ****         while ( (USART1->SR & USART_SR_TC) == 0) ; /* Wait while transfer */ \
+  36:../src/lcd1201/lcd1202_hw.h ****         GPIOA->BSRR = (1<<10); \
+  37:../src/lcd1201/lcd1202_hw.h ****     } while(0)
+  38:../src/lcd1201/lcd1202_hw.h **** 
+  39:../src/lcd1201/lcd1202_hw.h **** 
+  40:../src/lcd1201/lcd1202_hw.h **** #define lcd_delay_us(ms) do { uint32_t d = (ms)*11; while(--d) asm volatile(""); } while(0)
+  41:../src/lcd1201/lcd1202_hw.h **** 
+  42:../src/lcd1201/lcd1202_hw.h **** static void lcd_init_gpio(void)
+  43:../src/lcd1201/lcd1202_hw.h **** {
+  44:../src/lcd1201/lcd1202_hw.h ****     /* Init pins before call init */
+  45:../src/lcd1201/lcd1202_hw.h **** #ifdef USE_MCU_USART
+  46:../src/lcd1201/lcd1202_hw.h ****     USART1->BRR = 0x0010; /* MAX speed */
+  47:../src/lcd1201/lcd1202_hw.h ****     USART1->CR2 =
+  48:../src/lcd1201/lcd1202_hw.h ****         USART_CR2_CLKEN |     // Enable SCLK
+  49:../src/lcd1201/lcd1202_hw.h ****         // USART_CR2_STOP_0 | // 1 stop bit (don't use 0.5 stopbit!!!)
+  50:../src/lcd1201/lcd1202_hw.h ****         // USART_CR2_CPOL |   // Normal polarity
+  51:../src/lcd1201/lcd1202_hw.h ****         // USART_CR2_CPHA |   // Normal phase
+  52:../src/lcd1201/lcd1202_hw.h ****         USART_CR2_LBCL;       //clock fpr last bit
+  53:../src/lcd1201/lcd1202_hw.h ****     USART1->CR1 = USART_CR1_OVER8 |
+  54:../src/lcd1201/lcd1202_hw.h ****         USART_CR1_M |       // 9-bit
+  55:../src/lcd1201/lcd1202_hw.h ****         USART_CR1_TE | USART_CR1_UE;
+  56:../src/lcd1201/lcd1202_hw.h **** #else
+  57:../src/lcd1201/lcd1202_hw.h ****     GPIOA->BRR = (1<<8);
+  58:../src/lcd1201/lcd1202_hw.h **** #endif
+  59:../src/lcd1201/lcd1202_hw.h **** }
+  60:../src/lcd1201/lcd1202_hw.h **** 
+  61:../src/lcd1201/lcd1202_hw.h **** static void lcd_reset(void)
+  62:../src/lcd1201/lcd1202_hw.h **** {
+  63:../src/lcd1201/lcd1202_hw.h ****     /*
+  64:../src/lcd1201/lcd1202_hw.h ****     lcd_rst_mark();
+  65:../src/lcd1201/lcd1202_hw.h ****     lcd_delay_us(10);
+  66:../src/lcd1201/lcd1202_hw.h ****     lcd_rst_release();
+  67:../src/lcd1201/lcd1202_hw.h ****     lcd_delay_us(10);
+  68:../src/lcd1201/lcd1202_hw.h ****     */
+  69:../src/lcd1201/lcd1202_hw.h **** }
+  70:../src/lcd1201/lcd1202_hw.h **** 
+  71:../src/lcd1201/lcd1202_hw.h **** static void lcd_write_byte(uint8_t data, uint8_t rc)
+  72:../src/lcd1201/lcd1202_hw.h **** {
+ 17448              		.loc 25 72 0
+ 17449              		.cfi_startproc
+ 17450              		@ args = 0, pretend = 0, frame = 0
+ 17451              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17452              	.LVL0:
+ 17453 0000 08B5     		push	{r3, lr}
+ 17454              	.LCFI0:
+ 17455              		.cfi_def_cfa_offset 8
+  73:../src/lcd1201/lcd1202_hw.h **** #ifdef USE_MCU_USART
+  74:../src/lcd1201/lcd1202_hw.h ****     uint16_t d = data;
+  75:../src/lcd1201/lcd1202_hw.h ****     if (rc) /* If data */
+ 17456              		.loc 25 75 0
+ 17457 0002 09B1     		cbz	r1, .L2
+ 17458              		.cfi_offset 14, -4
+ 17459              		.cfi_offset 3, -8
+  76:../src/lcd1201/lcd1202_hw.h ****         d |= 0x100;
+ 17460              		.loc 25 76 0
+ 17461 0004 40F48070 		orr	r0, r0, #256
+ 17462              	.LVL1:
+ 17463              	.L2:
+  77:../src/lcd1201/lcd1202_hw.h **** 
+  78:../src/lcd1201/lcd1202_hw.h ****     d = __RBIT(d) >> 23;
+ 17464              		.loc 25 78 0
+ 17465 0008 FFF7FEFF 		bl	__RBIT
+ 17466              	.LVL2:
+ 17467 000c C00D     		lsrs	r0, r0, #23
+ 17468              	.LVL3:
+ 17469              	.L3:
+  79:../src/lcd1201/lcd1202_hw.h ****     while ( (USART1->SR & USART_SR_TXE) == 0 ) /* Transmitter registar is not empty */
+ 17470              		.loc 25 79 0 discriminator 1
+ 17471 000e 034B     		ldr	r3, .L4
+ 17472 0010 1A88     		ldrh	r2, [r3, #0]
+ 17473 0012 12F0800F 		tst	r2, #128
+ 17474 0016 FAD0     		beq	.L3
+  80:../src/lcd1201/lcd1202_hw.h ****         ; /* BLANK */
+  81:../src/lcd1201/lcd1202_hw.h **** 
+  82:../src/lcd1201/lcd1202_hw.h ****     USART1->DR = d;
+ 17475              		.loc 25 82 0
+ 17476 0018 9880     		strh	r0, [r3, #4]	@ movhi
+  83:../src/lcd1201/lcd1202_hw.h **** 
+  84:../src/lcd1201/lcd1202_hw.h **** #else
+  85:../src/lcd1201/lcd1202_hw.h ****     if(rc)
+  86:../src/lcd1201/lcd1202_hw.h ****         GPIOA->BSRR = (1<<9);
+  87:../src/lcd1201/lcd1202_hw.h ****     else
+  88:../src/lcd1201/lcd1202_hw.h ****         GPIOA->BRR = (1<<9);
+  89:../src/lcd1201/lcd1202_hw.h **** 
+  90:../src/lcd1201/lcd1202_hw.h ****     GPIOA->BSRR = (1<<8);
+  91:../src/lcd1201/lcd1202_hw.h ****     GPIOA->BRR = (1<<8);
+  92:../src/lcd1201/lcd1202_hw.h **** 
+  93:../src/lcd1201/lcd1202_hw.h ****     int i;
+  94:../src/lcd1201/lcd1202_hw.h ****     for(i=0; i<8; i++)
+  95:../src/lcd1201/lcd1202_hw.h ****     {
+  96:../src/lcd1201/lcd1202_hw.h ****         if(data & 0x80)
+  97:../src/lcd1201/lcd1202_hw.h ****             GPIOA->BSRR = (1<<9);
+  98:../src/lcd1201/lcd1202_hw.h ****         else
+  99:../src/lcd1201/lcd1202_hw.h ****             GPIOA->BRR = (1<<9);
+ 100:../src/lcd1201/lcd1202_hw.h ****         GPIOA->BSRR = (1<<8);
+ 101:../src/lcd1201/lcd1202_hw.h ****         GPIOA->BRR = (1<<8);
+ 102:../src/lcd1201/lcd1202_hw.h ****         data <<= 1;
+ 103:../src/lcd1201/lcd1202_hw.h ****     }
+ 104:../src/lcd1201/lcd1202_hw.h **** #endif
+ 105:../src/lcd1201/lcd1202_hw.h **** }
+ 17477              		.loc 25 105 0
+ 17478 001a 08BD     		pop	{r3, pc}
+ 17479              	.L5:
+ 17480              		.align	2
+ 17481              	.L4:
+ 17482 001c 00380140 		.word	1073821696
+ 17483              		.cfi_endproc
+ 17484              	.LFE31:
+ 17486              		.section	.text.lcd_reverse,"ax",%progbits
+ 17487              		.align	1
+ 17488              		.global	lcd_reverse
+ 17489              		.thumb
+ 17490              		.thumb_func
+ 17492              	lcd_reverse:
+ 17493              	.LFB34:
+   1:../src/lcd1201/lcd1202.c **** /**
+   2:../src/lcd1201/lcd1202.c ****  * Nokia 1202/1203/1280 LCD display driver
+   3:../src/lcd1201/lcd1202.c ****  *
+   4:../src/lcd1201/lcd1202.c ****  * (CC) 2011 Ivan A-R <ivan@tuxotronic.org>
+   5:../src/lcd1201/lcd1202.c ****  *
+   6:../src/lcd1201/lcd1202.c ****  *
+   7:../src/lcd1201/lcd1202.c ****  */
+   8:../src/lcd1201/lcd1202.c **** 
+   9:../src/lcd1201/lcd1202.c **** #include "lcd1202.h"
+  10:../src/lcd1201/lcd1202.c **** 
+  11:../src/lcd1201/lcd1202.c **** #include <stm32f10x.h>
+  12:../src/lcd1201/lcd1202.c **** #include <string.h>
+  13:../src/lcd1201/lcd1202.c **** 
+  14:../src/lcd1201/lcd1202.c **** #include "font5x8.h"
+  15:../src/lcd1201/lcd1202.c **** #include "fnt_libera_24x14.xbm"
+  16:../src/lcd1201/lcd1202.c **** // #include "fnt_terminus_24x14.xbm"
+  17:../src/lcd1201/lcd1202.c **** 
+  18:../src/lcd1201/lcd1202.c **** #define _LCD1202_C_
+  19:../src/lcd1201/lcd1202.c **** #include "lcd1202_hw.h"
+  20:../src/lcd1201/lcd1202.c **** 
+  21:../src/lcd1201/lcd1202.c **** /* hw undepended functions */
+  22:../src/lcd1201/lcd1202.c **** 
+  23:../src/lcd1201/lcd1202.c **** lcd_flags_t lcd_flags;
+  24:../src/lcd1201/lcd1202.c **** 
+  25:../src/lcd1201/lcd1202.c **** void lcd_init(void)
+  26:../src/lcd1201/lcd1202.c **** {
+  27:../src/lcd1201/lcd1202.c ****     lcd_init_gpio();
+  28:../src/lcd1201/lcd1202.c ****     lcd_reset();
+  29:../src/lcd1201/lcd1202.c **** 
+  30:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+  31:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0xE2, 0); // Reset
+  32:../src/lcd1201/lcd1202.c ****     lcd_delay_us(10000);
+  33:../src/lcd1201/lcd1202.c ****     // lcd_write_byte(0x3D, 0);  // Charge pump
+  34:../src/lcd1201/lcd1202.c ****     // lcd_write_byte(0x01, 0);  // Charge pump = 4 (default 5 is too hight for 3.0 volt)
+  35:../src/lcd1201/lcd1202.c ****     // lcd_write_byte(0xE1, 0);  // Additional VOP for contrast increase
+  36:../src/lcd1201/lcd1202.c ****     // lcd_write_byte(0x16, 0);  // from -127 to +127
+  37:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0xA4, 0); // Power saver off
+  38:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0x2F, 0); // Booster ON Voltage regulator ON Voltage follover ON
+  39:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0xAF, 0); // LCD display on
+  40:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+  41:../src/lcd1201/lcd1202.c **** 
+  42:../src/lcd1201/lcd1202.c ****     lcd_flags.inverse_char = 0;
+  43:../src/lcd1201/lcd1202.c **** 
+  44:../src/lcd1201/lcd1202.c ****     lcd_clr();
+  45:../src/lcd1201/lcd1202.c **** }
+  46:../src/lcd1201/lcd1202.c **** 
+  47:../src/lcd1201/lcd1202.c **** /* Page address set */
+  48:../src/lcd1201/lcd1202.c **** #define lcd_set_row(row) lcd_write_byte(0xB0 | ((row) & 0x0F), 0) 
+  49:../src/lcd1201/lcd1202.c **** 
+  50:../src/lcd1201/lcd1202.c **** #define lcd_set_col(col) do { \
+  51:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0x10 | ((col)>>4), 0); /* Sets the DDRAM column address - upper 3-bit */ \
+  52:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0x00 | ((col) & 0x0F), 0); /* lower 4-bit */ \
+  53:../src/lcd1201/lcd1202.c ****     } while(0)
+  54:../src/lcd1201/lcd1202.c **** 
+  55:../src/lcd1201/lcd1202.c **** 
+  56:../src/lcd1201/lcd1202.c **** void lcd_clr(void)
+  57:../src/lcd1201/lcd1202.c **** {
+  58:../src/lcd1201/lcd1202.c ****     int i;
+  59:../src/lcd1201/lcd1202.c ****     lcd_home();
+  60:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+  61:../src/lcd1201/lcd1202.c ****     for(i=0; i<16*6*9; i++)
+  62:../src/lcd1201/lcd1202.c ****     {
+  63:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0x00, 1);
+  64:../src/lcd1201/lcd1202.c ****     }
+  65:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+  66:../src/lcd1201/lcd1202.c **** }
+  67:../src/lcd1201/lcd1202.c **** 
+  68:../src/lcd1201/lcd1202.c **** void lcd_reverse(lcd_reverse_t inversion)
+  69:../src/lcd1201/lcd1202.c **** {
+ 17494              		.loc 1 69 0
+ 17495              		.cfi_startproc
+ 17496              		@ args = 0, pretend = 0, frame = 0
+ 17497              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17498              	.LVL4:
+ 17499 0000 08B5     		push	{r3, lr}
+ 17500              	.LCFI1:
+ 17501              		.cfi_def_cfa_offset 8
+  70:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17502              		.loc 1 70 0
+ 17503 0002 0B4B     		ldr	r3, .L11
+ 17504              		.cfi_offset 14, -4
+ 17505              		.cfi_offset 3, -8
+ 17506 0004 4FF48062 		mov	r2, #1024
+ 17507 0008 5A61     		str	r2, [r3, #20]
+  71:../src/lcd1201/lcd1202.c ****     if(inversion)
+ 17508              		.loc 1 71 0
+ 17509 000a 0146     		mov	r1, r0
+ 17510 000c 10B1     		cbz	r0, .L7
+  72:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0xA7, 0); // reverse display
+ 17511              		.loc 1 72 0
+ 17512 000e A720     		movs	r0, #167
+ 17513              	.LVL5:
+ 17514 0010 0021     		movs	r1, #0
+ 17515 0012 00E0     		b	.L10
+ 17516              	.LVL6:
+ 17517              	.L7:
+  73:../src/lcd1201/lcd1202.c ****     else
+  74:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0xA6, 0); // normal display
+ 17518              		.loc 1 74 0
+ 17519 0014 A620     		movs	r0, #166
+ 17520              	.LVL7:
+ 17521              	.L10:
+ 17522 0016 FFF7FEFF 		bl	lcd_write_byte
+ 17523              	.L9:
+  75:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17524              		.loc 1 75 0 discriminator 1
+ 17525 001a 064B     		ldr	r3, .L11+4
+ 17526 001c 1B88     		ldrh	r3, [r3, #0]
+ 17527 001e 13F0400F 		tst	r3, #64
+ 17528 0022 FAD0     		beq	.L9
+ 17529              		.loc 1 75 0 is_stmt 0 discriminator 2
+ 17530 0024 024B     		ldr	r3, .L11
+ 17531 0026 4FF48062 		mov	r2, #1024
+ 17532 002a 1A61     		str	r2, [r3, #16]
+  76:../src/lcd1201/lcd1202.c **** }
+ 17533              		.loc 1 76 0 is_stmt 1 discriminator 2
+ 17534 002c 08BD     		pop	{r3, pc}
+ 17535              	.L12:
+ 17536 002e 00BF     		.align	2
+ 17537              	.L11:
+ 17538 0030 00080140 		.word	1073809408
+ 17539 0034 00380140 		.word	1073821696
+ 17540              		.cfi_endproc
+ 17541              	.LFE34:
+ 17543              		.section	.text.lcd_segment_direction,"ax",%progbits
+ 17544              		.align	1
+ 17545              		.global	lcd_segment_direction
+ 17546              		.thumb
+ 17547              		.thumb_func
+ 17549              	lcd_segment_direction:
+ 17550              	.LFB35:
+  77:../src/lcd1201/lcd1202.c **** 
+  78:../src/lcd1201/lcd1202.c **** void lcd_segment_direction(lcd_reverse_t reverse)
+  79:../src/lcd1201/lcd1202.c **** {
+ 17551              		.loc 1 79 0
+ 17552              		.cfi_startproc
+ 17553              		@ args = 0, pretend = 0, frame = 0
+ 17554              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17555              	.LVL8:
+ 17556 0000 08B5     		push	{r3, lr}
+ 17557              	.LCFI2:
+ 17558              		.cfi_def_cfa_offset 8
+  80:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17559              		.loc 1 80 0
+ 17560 0002 0B4B     		ldr	r3, .L18
+ 17561              		.cfi_offset 14, -4
+ 17562              		.cfi_offset 3, -8
+ 17563 0004 4FF48062 		mov	r2, #1024
+ 17564 0008 5A61     		str	r2, [r3, #20]
+  81:../src/lcd1201/lcd1202.c ****     if(reverse)
+ 17565              		.loc 1 81 0
+ 17566 000a 0146     		mov	r1, r0
+ 17567 000c 10B1     		cbz	r0, .L14
+  82:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0xA1, 0); // reverse segment direction
+ 17568              		.loc 1 82 0
+ 17569 000e A120     		movs	r0, #161
+ 17570              	.LVL9:
+ 17571 0010 0021     		movs	r1, #0
+ 17572 0012 00E0     		b	.L17
+ 17573              	.LVL10:
+ 17574              	.L14:
+  83:../src/lcd1201/lcd1202.c ****     else
+  84:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0xA0, 0); // normal segment direction
+ 17575              		.loc 1 84 0
+ 17576 0014 A020     		movs	r0, #160
+ 17577              	.LVL11:
+ 17578              	.L17:
+ 17579 0016 FFF7FEFF 		bl	lcd_write_byte
+ 17580              	.L16:
+  85:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17581              		.loc 1 85 0 discriminator 1
+ 17582 001a 064B     		ldr	r3, .L18+4
+ 17583 001c 1B88     		ldrh	r3, [r3, #0]
+ 17584 001e 13F0400F 		tst	r3, #64
+ 17585 0022 FAD0     		beq	.L16
+ 17586              		.loc 1 85 0 is_stmt 0 discriminator 2
+ 17587 0024 024B     		ldr	r3, .L18
+ 17588 0026 4FF48062 		mov	r2, #1024
+ 17589 002a 1A61     		str	r2, [r3, #16]
+  86:../src/lcd1201/lcd1202.c **** }
+ 17590              		.loc 1 86 0 is_stmt 1 discriminator 2
+ 17591 002c 08BD     		pop	{r3, pc}
+ 17592              	.L19:
+ 17593 002e 00BF     		.align	2
+ 17594              	.L18:
+ 17595 0030 00080140 		.word	1073809408
+ 17596 0034 00380140 		.word	1073821696
+ 17597              		.cfi_endproc
+ 17598              	.LFE35:
+ 17600              		.section	.text.lcd_column_direction,"ax",%progbits
+ 17601              		.align	1
+ 17602              		.global	lcd_column_direction
+ 17603              		.thumb
+ 17604              		.thumb_func
+ 17606              	lcd_column_direction:
+ 17607              	.LFB36:
+  87:../src/lcd1201/lcd1202.c **** 
+  88:../src/lcd1201/lcd1202.c **** void lcd_column_direction(lcd_reverse_t reverse)
+  89:../src/lcd1201/lcd1202.c **** {
+ 17608              		.loc 1 89 0
+ 17609              		.cfi_startproc
+ 17610              		@ args = 0, pretend = 0, frame = 0
+ 17611              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17612              	.LVL12:
+ 17613 0000 08B5     		push	{r3, lr}
+ 17614              	.LCFI3:
+ 17615              		.cfi_def_cfa_offset 8
+  90:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17616              		.loc 1 90 0
+ 17617 0002 0B4B     		ldr	r3, .L25
+ 17618              		.cfi_offset 14, -4
+ 17619              		.cfi_offset 3, -8
+ 17620 0004 4FF48062 		mov	r2, #1024
+ 17621 0008 5A61     		str	r2, [r3, #20]
+  91:../src/lcd1201/lcd1202.c ****     if(reverse)
+ 17622              		.loc 1 91 0
+ 17623 000a 0146     		mov	r1, r0
+ 17624 000c 10B1     		cbz	r0, .L21
+  92:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0xC8, 0); // reverse column direction
+ 17625              		.loc 1 92 0
+ 17626 000e C820     		movs	r0, #200
+ 17627              	.LVL13:
+ 17628 0010 0021     		movs	r1, #0
+ 17629 0012 00E0     		b	.L24
+ 17630              	.LVL14:
+ 17631              	.L21:
+  93:../src/lcd1201/lcd1202.c ****     else
+  94:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0xC0, 0); // normal column direction
+ 17632              		.loc 1 94 0
+ 17633 0014 C020     		movs	r0, #192
+ 17634              	.LVL15:
+ 17635              	.L24:
+ 17636 0016 FFF7FEFF 		bl	lcd_write_byte
+ 17637              	.L23:
+  95:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17638              		.loc 1 95 0 discriminator 1
+ 17639 001a 064B     		ldr	r3, .L25+4
+ 17640 001c 1B88     		ldrh	r3, [r3, #0]
+ 17641 001e 13F0400F 		tst	r3, #64
+ 17642 0022 FAD0     		beq	.L23
+ 17643              		.loc 1 95 0 is_stmt 0 discriminator 2
+ 17644 0024 024B     		ldr	r3, .L25
+ 17645 0026 4FF48062 		mov	r2, #1024
+ 17646 002a 1A61     		str	r2, [r3, #16]
+  96:../src/lcd1201/lcd1202.c **** }
+ 17647              		.loc 1 96 0 is_stmt 1 discriminator 2
+ 17648 002c 08BD     		pop	{r3, pc}
+ 17649              	.L26:
+ 17650 002e 00BF     		.align	2
+ 17651              	.L25:
+ 17652 0030 00080140 		.word	1073809408
+ 17653 0034 00380140 		.word	1073821696
+ 17654              		.cfi_endproc
+ 17655              	.LFE36:
+ 17657              		.section	.text.lcd_contrast,"ax",%progbits
+ 17658              		.align	1
+ 17659              		.global	lcd_contrast
+ 17660              		.thumb
+ 17661              		.thumb_func
+ 17663              	lcd_contrast:
+ 17664              	.LFB37:
+  97:../src/lcd1201/lcd1202.c **** 
+  98:../src/lcd1201/lcd1202.c **** void lcd_contrast(int contrast)
+  99:../src/lcd1201/lcd1202.c **** {
+ 17665              		.loc 1 99 0
+ 17666              		.cfi_startproc
+ 17667              		@ args = 0, pretend = 0, frame = 0
+ 17668              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17669              	.LVL16:
+ 17670 0000 08B5     		push	{r3, lr}
+ 17671              	.LCFI4:
+ 17672              		.cfi_def_cfa_offset 8
+ 100:../src/lcd1201/lcd1202.c ****     contrast = (contrast + 16) & 0x1F;
+ 17673              		.loc 1 100 0
+ 17674 0002 1030     		adds	r0, r0, #16
+ 17675              	.LVL17:
+ 101:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17676              		.loc 1 101 0
+ 17677 0004 0A4B     		ldr	r3, .L29
+ 17678              		.cfi_offset 14, -4
+ 17679              		.cfi_offset 3, -8
+ 17680 0006 4FF48062 		mov	r2, #1024
+ 100:../src/lcd1201/lcd1202.c ****     contrast = (contrast + 16) & 0x1F;
+ 17681              		.loc 1 100 0
+ 17682 000a 00F01F00 		and	r0, r0, #31
+ 17683              	.LVL18:
+ 17684              		.loc 1 101 0
+ 17685 000e 5A61     		str	r2, [r3, #20]
+ 102:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0x80 | contrast, 0); // Set electronic volume
+ 17686              		.loc 1 102 0
+ 17687 0010 40F08000 		orr	r0, r0, #128
+ 17688              	.LVL19:
+ 17689 0014 0021     		movs	r1, #0
+ 17690 0016 FFF7FEFF 		bl	lcd_write_byte
+ 17691              	.L28:
+ 103:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17692              		.loc 1 103 0 discriminator 1
+ 17693 001a 064B     		ldr	r3, .L29+4
+ 17694 001c 1B88     		ldrh	r3, [r3, #0]
+ 17695 001e 13F0400F 		tst	r3, #64
+ 17696 0022 FAD0     		beq	.L28
+ 17697              		.loc 1 103 0 is_stmt 0 discriminator 2
+ 17698 0024 024B     		ldr	r3, .L29
+ 17699 0026 4FF48062 		mov	r2, #1024
+ 17700 002a 1A61     		str	r2, [r3, #16]
+ 104:../src/lcd1201/lcd1202.c **** }
+ 17701              		.loc 1 104 0 is_stmt 1 discriminator 2
+ 17702 002c 08BD     		pop	{r3, pc}
+ 17703              	.L30:
+ 17704 002e 00BF     		.align	2
+ 17705              	.L29:
+ 17706 0030 00080140 		.word	1073809408
+ 17707 0034 00380140 		.word	1073821696
+ 17708              		.cfi_endproc
+ 17709              	.LFE37:
+ 17711              		.section	.text.lcd_inverse_line,"ax",%progbits
+ 17712              		.align	1
+ 17713              		.global	lcd_inverse_line
+ 17714              		.thumb
+ 17715              		.thumb_func
+ 17717              	lcd_inverse_line:
+ 17718              	.LFB38:
+ 105:../src/lcd1201/lcd1202.c **** 
+ 106:../src/lcd1201/lcd1202.c **** void lcd_inverse_line(int line)
+ 107:../src/lcd1201/lcd1202.c **** {
+ 17719              		.loc 1 107 0
+ 17720              		.cfi_startproc
+ 17721              		@ args = 0, pretend = 0, frame = 0
+ 17722              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17723              	.LVL20:
+ 108:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17724              		.loc 1 108 0
+ 17725 0000 114B     		ldr	r3, .L36
+ 17726 0002 4FF48062 		mov	r2, #1024
+ 109:../src/lcd1201/lcd1202.c ****     if((line >= 0) && (line <32))
+ 17727              		.loc 1 109 0
+ 17728 0006 1F28     		cmp	r0, #31
+ 107:../src/lcd1201/lcd1202.c **** {
+ 17729              		.loc 1 107 0
+ 17730 0008 10B5     		push	{r4, lr}
+ 17731              	.LCFI5:
+ 17732              		.cfi_def_cfa_offset 8
+ 107:../src/lcd1201/lcd1202.c **** {
+ 17733              		.loc 1 107 0
+ 17734 000a 0446     		mov	r4, r0
+ 17735              		.cfi_offset 14, -4
+ 17736              		.cfi_offset 4, -8
+ 108:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17737              		.loc 1 108 0
+ 17738 000c 5A61     		str	r2, [r3, #20]
+ 17739              		.loc 1 109 0
+ 17740 000e 08D8     		bhi	.L32
+ 110:../src/lcd1201/lcd1202.c ****     {
+ 111:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0xAD, 0);
+ 17741              		.loc 1 111 0
+ 17742 0010 AD20     		movs	r0, #173
+ 17743              	.LVL21:
+ 17744 0012 0021     		movs	r1, #0
+ 17745 0014 FFF7FEFF 		bl	lcd_write_byte
+ 112:../src/lcd1201/lcd1202.c ****         lcd_write_byte(line | 0x20, 0);
+ 17746              		.loc 1 112 0
+ 17747 0018 44F02000 		orr	r0, r4, #32
+ 17748 001c C0B2     		uxtb	r0, r0
+ 17749 001e 0021     		movs	r1, #0
+ 17750 0020 05E0     		b	.L35
+ 17751              	.L32:
+ 113:../src/lcd1201/lcd1202.c ****     }
+ 114:../src/lcd1201/lcd1202.c ****     else
+ 115:../src/lcd1201/lcd1202.c ****     {
+ 116:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0xAD, 0);
+ 17752              		.loc 1 116 0
+ 17753 0022 AD20     		movs	r0, #173
+ 17754 0024 0021     		movs	r1, #0
+ 17755 0026 FFF7FEFF 		bl	lcd_write_byte
+ 117:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0, 0);
+ 17756              		.loc 1 117 0
+ 17757 002a 0020     		movs	r0, #0
+ 17758 002c 0146     		mov	r1, r0
+ 17759              	.L35:
+ 17760 002e FFF7FEFF 		bl	lcd_write_byte
+ 17761              	.L34:
+ 118:../src/lcd1201/lcd1202.c ****     }
+ 119:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17762              		.loc 1 119 0 discriminator 1
+ 17763 0032 064B     		ldr	r3, .L36+4
+ 17764 0034 1B88     		ldrh	r3, [r3, #0]
+ 17765 0036 13F0400F 		tst	r3, #64
+ 17766 003a FAD0     		beq	.L34
+ 17767              		.loc 1 119 0 is_stmt 0 discriminator 2
+ 17768 003c 024B     		ldr	r3, .L36
+ 17769 003e 4FF48062 		mov	r2, #1024
+ 17770 0042 1A61     		str	r2, [r3, #16]
+ 120:../src/lcd1201/lcd1202.c **** }
+ 17771              		.loc 1 120 0 is_stmt 1 discriminator 2
+ 17772 0044 10BD     		pop	{r4, pc}
+ 17773              	.L37:
+ 17774 0046 00BF     		.align	2
+ 17775              	.L36:
+ 17776 0048 00080140 		.word	1073809408
+ 17777 004c 00380140 		.word	1073821696
+ 17778              		.cfi_endproc
+ 17779              	.LFE38:
+ 17781              		.section	.text.lcd_start_line,"ax",%progbits
+ 17782              		.align	1
+ 17783              		.global	lcd_start_line
+ 17784              		.thumb
+ 17785              		.thumb_func
+ 17787              	lcd_start_line:
+ 17788              	.LFB39:
+ 121:../src/lcd1201/lcd1202.c **** 
+ 122:../src/lcd1201/lcd1202.c **** void lcd_start_line(uint8_t line)
+ 123:../src/lcd1201/lcd1202.c **** {
+ 17789              		.loc 1 123 0
+ 17790              		.cfi_startproc
+ 17791              		@ args = 0, pretend = 0, frame = 0
+ 17792              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17793              	.LVL22:
+ 17794 0000 08B5     		push	{r3, lr}
+ 17795              	.LCFI6:
+ 17796              		.cfi_def_cfa_offset 8
+ 124:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17797              		.loc 1 124 0
+ 17798 0002 0A4B     		ldr	r3, .L40
+ 17799              		.cfi_offset 14, -4
+ 17800              		.cfi_offset 3, -8
+ 17801 0004 4FF48062 		mov	r2, #1024
+ 125:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0x40 | (line & 0x3F), 0);
+ 17802              		.loc 1 125 0
+ 17803 0008 00F03F00 		and	r0, r0, #63
+ 17804              	.LVL23:
+ 124:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17805              		.loc 1 124 0
+ 17806 000c 5A61     		str	r2, [r3, #20]
+ 17807              		.loc 1 125 0
+ 17808 000e 40F04000 		orr	r0, r0, #64
+ 17809 0012 0021     		movs	r1, #0
+ 17810 0014 FFF7FEFF 		bl	lcd_write_byte
+ 17811              	.L39:
+ 126:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17812              		.loc 1 126 0 discriminator 1
+ 17813 0018 054B     		ldr	r3, .L40+4
+ 17814 001a 1B88     		ldrh	r3, [r3, #0]
+ 17815 001c 13F0400F 		tst	r3, #64
+ 17816 0020 FAD0     		beq	.L39
+ 17817              		.loc 1 126 0 is_stmt 0 discriminator 2
+ 17818 0022 024B     		ldr	r3, .L40
+ 17819 0024 4FF48062 		mov	r2, #1024
+ 17820 0028 1A61     		str	r2, [r3, #16]
+ 127:../src/lcd1201/lcd1202.c **** }
+ 17821              		.loc 1 127 0 is_stmt 1 discriminator 2
+ 17822 002a 08BD     		pop	{r3, pc}
+ 17823              	.L41:
+ 17824              		.align	2
+ 17825              	.L40:
+ 17826 002c 00080140 		.word	1073809408
+ 17827 0030 00380140 		.word	1073821696
+ 17828              		.cfi_endproc
+ 17829              	.LFE39:
+ 17831              		.section	.text.lcd_home,"ax",%progbits
+ 17832              		.align	1
+ 17833              		.global	lcd_home
+ 17834              		.thumb
+ 17835              		.thumb_func
+ 17837              	lcd_home:
+ 17838              	.LFB40:
+ 128:../src/lcd1201/lcd1202.c **** 
+ 129:../src/lcd1201/lcd1202.c **** void lcd_home(void)
+ 130:../src/lcd1201/lcd1202.c **** {
+ 17839              		.loc 1 130 0
+ 17840              		.cfi_startproc
+ 17841              		@ args = 0, pretend = 0, frame = 0
+ 17842              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17843 0000 08B5     		push	{r3, lr}
+ 17844              	.LCFI7:
+ 17845              		.cfi_def_cfa_offset 8
+ 131:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17846              		.loc 1 131 0
+ 17847 0002 0D4B     		ldr	r3, .L44
+ 17848              		.cfi_offset 14, -4
+ 17849              		.cfi_offset 3, -8
+ 17850 0004 4FF48062 		mov	r2, #1024
+ 17851 0008 5A61     		str	r2, [r3, #20]
+ 132:../src/lcd1201/lcd1202.c ****     lcd_set_row(0);
+ 17852              		.loc 1 132 0
+ 17853 000a B020     		movs	r0, #176
+ 17854 000c 0021     		movs	r1, #0
+ 17855 000e FFF7FEFF 		bl	lcd_write_byte
+ 133:../src/lcd1201/lcd1202.c ****     lcd_set_col(0);
+ 17856              		.loc 1 133 0
+ 17857 0012 1020     		movs	r0, #16
+ 17858 0014 0021     		movs	r1, #0
+ 17859 0016 FFF7FEFF 		bl	lcd_write_byte
+ 17860 001a 0020     		movs	r0, #0
+ 17861 001c 0146     		mov	r1, r0
+ 17862 001e FFF7FEFF 		bl	lcd_write_byte
+ 17863              	.L43:
+ 134:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17864              		.loc 1 134 0 discriminator 1
+ 17865 0022 064B     		ldr	r3, .L44+4
+ 17866 0024 1B88     		ldrh	r3, [r3, #0]
+ 17867 0026 13F0400F 		tst	r3, #64
+ 17868 002a FAD0     		beq	.L43
+ 17869              		.loc 1 134 0 is_stmt 0 discriminator 2
+ 17870 002c 024B     		ldr	r3, .L44
+ 17871 002e 4FF48062 		mov	r2, #1024
+ 17872 0032 1A61     		str	r2, [r3, #16]
+ 135:../src/lcd1201/lcd1202.c **** }
+ 17873              		.loc 1 135 0 is_stmt 1 discriminator 2
+ 17874 0034 08BD     		pop	{r3, pc}
+ 17875              	.L45:
+ 17876 0036 00BF     		.align	2
+ 17877              	.L44:
+ 17878 0038 00080140 		.word	1073809408
+ 17879 003c 00380140 		.word	1073821696
+ 17880              		.cfi_endproc
+ 17881              	.LFE40:
+ 17883              		.section	.text.lcd_clr,"ax",%progbits
+ 17884              		.align	1
+ 17885              		.global	lcd_clr
+ 17886              		.thumb
+ 17887              		.thumb_func
+ 17889              	lcd_clr:
+ 17890              	.LFB33:
+  57:../src/lcd1201/lcd1202.c **** {
+ 17891              		.loc 1 57 0
+ 17892              		.cfi_startproc
+ 17893              		@ args = 0, pretend = 0, frame = 0
+ 17894              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17895 0000 10B5     		push	{r4, lr}
+ 17896              	.LCFI8:
+ 17897              		.cfi_def_cfa_offset 8
+  59:../src/lcd1201/lcd1202.c ****     lcd_home();
+ 17898              		.loc 1 59 0
+ 17899              		.cfi_offset 14, -4
+ 17900              		.cfi_offset 4, -8
+ 17901 0002 FFF7FEFF 		bl	lcd_home
+  60:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17902              		.loc 1 60 0
+ 17903 0006 0B4B     		ldr	r3, .L49
+ 17904 0008 4FF48062 		mov	r2, #1024
+ 17905 000c 5A61     		str	r2, [r3, #20]
+ 17906              	.LVL24:
+ 17907 000e 4FF45874 		mov	r4, #864
+ 17908              	.LVL25:
+ 17909              	.L47:
+  63:../src/lcd1201/lcd1202.c ****         lcd_write_byte(0x00, 1);
+ 17910              		.loc 1 63 0 discriminator 2
+ 17911 0012 0020     		movs	r0, #0
+ 17912 0014 0121     		movs	r1, #1
+ 17913 0016 FFF7FEFF 		bl	lcd_write_byte
+  61:../src/lcd1201/lcd1202.c ****     for(i=0; i<16*6*9; i++)
+ 17914              		.loc 1 61 0 discriminator 2
+ 17915 001a 013C     		subs	r4, r4, #1
+ 17916 001c F9D1     		bne	.L47
+ 17917              	.L48:
+  65:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17918              		.loc 1 65 0 discriminator 1
+ 17919 001e 064B     		ldr	r3, .L49+4
+ 17920 0020 1B88     		ldrh	r3, [r3, #0]
+ 17921 0022 13F0400F 		tst	r3, #64
+ 17922 0026 FAD0     		beq	.L48
+  65:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 17923              		.loc 1 65 0 is_stmt 0 discriminator 2
+ 17924 0028 024B     		ldr	r3, .L49
+ 17925 002a 4FF48062 		mov	r2, #1024
+ 17926 002e 1A61     		str	r2, [r3, #16]
+  66:../src/lcd1201/lcd1202.c **** }
+ 17927              		.loc 1 66 0 is_stmt 1 discriminator 2
+ 17928 0030 10BD     		pop	{r4, pc}
+ 17929              	.L50:
+ 17930 0032 00BF     		.align	2
+ 17931              	.L49:
+ 17932 0034 00080140 		.word	1073809408
+ 17933 0038 00380140 		.word	1073821696
+ 17934              		.cfi_endproc
+ 17935              	.LFE33:
+ 17937              		.section	.text.lcd_init,"ax",%progbits
+ 17938              		.align	1
+ 17939              		.global	lcd_init
+ 17940              		.thumb
+ 17941              		.thumb_func
+ 17943              	lcd_init:
+ 17944              	.LFB32:
+  26:../src/lcd1201/lcd1202.c **** {
+ 17945              		.loc 1 26 0
+ 17946              		.cfi_startproc
+ 17947              		@ args = 0, pretend = 0, frame = 0
+ 17948              		@ frame_needed = 0, uses_anonymous_args = 0
+ 17949              	.LBB8:
+ 17950              	.LBB9:
+  46:../src/lcd1201/lcd1202_hw.h ****     USART1->BRR = 0x0010; /* MAX speed */
+ 17951              		.loc 25 46 0
+ 17952 0000 194B     		ldr	r3, .L55
+ 17953 0002 1022     		movs	r2, #16
+ 17954              	.LBE9:
+ 17955              	.LBE8:
+  26:../src/lcd1201/lcd1202.c **** {
+ 17956              		.loc 1 26 0
+ 17957 0004 10B5     		push	{r4, lr}
+ 17958              	.LCFI9:
+ 17959              		.cfi_def_cfa_offset 8
+ 17960              	.LBB11:
+ 17961              	.LBB10:
+  46:../src/lcd1201/lcd1202_hw.h ****     USART1->BRR = 0x0010; /* MAX speed */
+ 17962              		.loc 25 46 0
+ 17963 0006 1A81     		strh	r2, [r3, #8]	@ movhi
+  47:../src/lcd1201/lcd1202_hw.h ****     USART1->CR2 =
+ 17964              		.loc 25 47 0
+ 17965 0008 4FF41062 		mov	r2, #2304	@ movhi
+ 17966 000c 1A82     		strh	r2, [r3, #16]	@ movhi
+  53:../src/lcd1201/lcd1202_hw.h ****     USART1->CR1 = USART_CR1_OVER8 |
+ 17967              		.loc 25 53 0
+ 17968 000e 4BF20802 		movw	r2, 45064	@ movhi
+ 17969 0012 9A81     		strh	r2, [r3, #12]	@ movhi
+ 17970              	.LBE10:
+ 17971              	.LBE11:
+  30:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 17972              		.loc 1 30 0
+ 17973 0014 154B     		ldr	r3, .L55+4
+ 17974 0016 4FF48062 		mov	r2, #1024
+ 17975 001a 5A61     		str	r2, [r3, #20]
+  31:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0xE2, 0); // Reset
+ 17976              		.loc 1 31 0
+ 17977 001c E220     		movs	r0, #226
+ 17978 001e 0021     		movs	r1, #0
+ 17979              		.cfi_offset 14, -4
+ 17980              		.cfi_offset 4, -8
+ 17981 0020 FFF7FEFF 		bl	lcd_write_byte
+ 17982              	.LVL26:
+ 17983              	.LBB12:
+  32:../src/lcd1201/lcd1202.c ****     lcd_delay_us(10000);
+ 17984              		.loc 1 32 0
+ 17985 0024 124C     		ldr	r4, .L55+8
+ 17986 0026 FFE7     		b	.L52
+ 17987              	.LVL27:
+ 17988              	.L53:
+ 17989              	.LVL28:
+ 17990              	.L52:
+  32:../src/lcd1201/lcd1202.c ****     lcd_delay_us(10000);
+ 17991              		.loc 1 32 0 is_stmt 0 discriminator 1
+ 17992 0028 013C     		subs	r4, r4, #1
+ 17993              	.LVL29:
+ 17994 002a FDD1     		bne	.L53
+ 17995              	.LBE12:
+  37:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0xA4, 0); // Power saver off
+ 17996              		.loc 1 37 0 is_stmt 1
+ 17997 002c A420     		movs	r0, #164
+ 17998 002e 2146     		mov	r1, r4
+ 17999 0030 FFF7FEFF 		bl	lcd_write_byte
+  38:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0x2F, 0); // Booster ON Voltage regulator ON Voltage follover ON
+ 18000              		.loc 1 38 0
+ 18001 0034 2F20     		movs	r0, #47
+ 18002 0036 2146     		mov	r1, r4
+ 18003 0038 FFF7FEFF 		bl	lcd_write_byte
+  39:../src/lcd1201/lcd1202.c ****     lcd_write_byte(0xAF, 0); // LCD display on
+ 18004              		.loc 1 39 0
+ 18005 003c AF20     		movs	r0, #175
+ 18006 003e 2146     		mov	r1, r4
+ 18007 0040 FFF7FEFF 		bl	lcd_write_byte
+ 18008              	.L54:
+  40:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 18009              		.loc 1 40 0 discriminator 1
+ 18010 0044 084B     		ldr	r3, .L55
+ 18011 0046 1B88     		ldrh	r3, [r3, #0]
+ 18012 0048 13F0400F 		tst	r3, #64
+ 18013 004c FAD0     		beq	.L54
+  40:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 18014              		.loc 1 40 0 is_stmt 0 discriminator 2
+ 18015 004e 074B     		ldr	r3, .L55+4
+ 18016 0050 4FF48062 		mov	r2, #1024
+ 18017 0054 1A61     		str	r2, [r3, #16]
+  42:../src/lcd1201/lcd1202.c ****     lcd_flags.inverse_char = 0;
+ 18018              		.loc 1 42 0 is_stmt 1 discriminator 2
+ 18019 0056 074B     		ldr	r3, .L55+12
+ 18020 0058 1A68     		ldr	r2, [r3, #0]
+ 18021 005a 6FF30002 		bfc	r2, #0, #1
+ 18022 005e 1A60     		str	r2, [r3, #0]
+  45:../src/lcd1201/lcd1202.c **** }
+ 18023              		.loc 1 45 0 discriminator 2
+ 18024 0060 BDE81040 		pop	{r4, lr}
+  44:../src/lcd1201/lcd1202.c ****     lcd_clr();
+ 18025              		.loc 1 44 0 discriminator 2
+ 18026 0064 FFF7FEBF 		b	lcd_clr
+ 18027              	.L56:
+ 18028              		.align	2
+ 18029              	.L55:
+ 18030 0068 00380140 		.word	1073821696
+ 18031 006c 00080140 		.word	1073809408
+ 18032 0070 B0AD0100 		.word	110000
+ 18033 0074 00000000 		.word	lcd_flags
+ 18034              		.cfi_endproc
+ 18035              	.LFE32:
+ 18037              		.section	.text.lcd_char,"ax",%progbits
+ 18038              		.align	1
+ 18039              		.global	lcd_char
+ 18040              		.thumb
+ 18041              		.thumb_func
+ 18043              	lcd_char:
+ 18044              	.LFB41:
+ 136:../src/lcd1201/lcd1202.c **** 
+ 137:../src/lcd1201/lcd1202.c **** void lcd_char(uint8_t row, uint8_t col, char chr)
+ 138:../src/lcd1201/lcd1202.c **** {
+ 18045              		.loc 1 138 0
+ 18046              		.cfi_startproc
+ 18047              		@ args = 0, pretend = 0, frame = 0
+ 18048              		@ frame_needed = 0, uses_anonymous_args = 0
+ 18049              	.LVL30:
+ 18050 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 18051              	.LCFI10:
+ 18052              		.cfi_def_cfa_offset 24
+ 139:../src/lcd1201/lcd1202.c ****     int i;
+ 140:../src/lcd1201/lcd1202.c ****     const uint8_t* f = font5x8 + chr*5;
+ 18053              		.loc 1 140 0
+ 18054 0002 234F     		ldr	r7, .L68
+ 18055              		.cfi_offset 14, -4
+ 18056              		.cfi_offset 7, -8
+ 18057              		.cfi_offset 6, -12
+ 18058              		.cfi_offset 5, -16
+ 18059              		.cfi_offset 4, -20
+ 18060              		.cfi_offset 3, -24
+ 141:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 18061              		.loc 1 141 0
+ 18062 0004 234B     		ldr	r3, .L68+4
+ 140:../src/lcd1201/lcd1202.c ****     const uint8_t* f = font5x8 + chr*5;
+ 18063              		.loc 1 140 0
+ 18064 0006 02EB8202 		add	r2, r2, r2, lsl #2
+ 18065              	.LVL31:
+ 18066 000a BF18     		adds	r7, r7, r2
+ 18067              	.LVL32:
+ 142:../src/lcd1201/lcd1202.c ****     lcd_set_row(row);
+ 18068              		.loc 1 142 0
+ 18069 000c 00F00F00 		and	r0, r0, #15
+ 18070              	.LVL33:
+ 141:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 18071              		.loc 1 141 0
+ 18072 0010 4FF48062 		mov	r2, #1024
+ 138:../src/lcd1201/lcd1202.c **** {
+ 18073              		.loc 1 138 0
+ 18074 0014 0C46     		mov	r4, r1
+ 141:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 18075              		.loc 1 141 0
+ 18076 0016 5A61     		str	r2, [r3, #20]
+ 18077              		.loc 1 142 0
+ 18078 0018 40F0B000 		orr	r0, r0, #176
+ 18079 001c 0021     		movs	r1, #0
+ 18080              	.LVL34:
+ 18081 001e FFF7FEFF 		bl	lcd_write_byte
+ 143:../src/lcd1201/lcd1202.c ****     lcd_set_col(col);
+ 18082              		.loc 1 143 0
+ 18083 0022 2009     		lsrs	r0, r4, #4
+ 18084 0024 40F01000 		orr	r0, r0, #16
+ 18085 0028 0021     		movs	r1, #0
+ 18086 002a FFF7FEFF 		bl	lcd_write_byte
+ 18087 002e 04F00F00 		and	r0, r4, #15
+ 18088 0032 0021     		movs	r1, #0
+ 18089 0034 FFF7FEFF 		bl	lcd_write_byte
+ 18090              	.LVL35:
+ 144:../src/lcd1201/lcd1202.c ****     for(i=0; i<fontWidth; i++)
+ 18091              		.loc 1 144 0
+ 18092 0038 0025     		movs	r5, #0
+ 18093              	.LVL36:
+ 18094              	.L62:
+ 18095              	.LBB13:
+ 145:../src/lcd1201/lcd1202.c ****     {
+ 146:../src/lcd1201/lcd1202.c ****         uint8_t b = *f++;
+ 147:../src/lcd1201/lcd1202.c ****         if(lcd_flags.inverse_char) b = ~b;
+ 18096              		.loc 1 147 0
+ 18097 003a 174E     		ldr	r6, .L68+8
+ 146:../src/lcd1201/lcd1202.c ****         uint8_t b = *f++;
+ 18098              		.loc 1 146 0
+ 18099 003c 785D     		ldrb	r0, [r7, r5]	@ zero_extendqisi2
+ 18100              	.LVL37:
+ 18101              		.loc 1 147 0
+ 18102 003e 3378     		ldrb	r3, [r6, #0]	@ zero_extendqisi2
+ 18103 0040 13F0010F 		tst	r3, #1
+ 18104 0044 01D0     		beq	.L58
+ 18105              		.loc 1 147 0 is_stmt 0 discriminator 1
+ 18106 0046 C043     		mvns	r0, r0
+ 18107              	.LVL38:
+ 18108 0048 C0B2     		uxtb	r0, r0
+ 18109              	.LVL39:
+ 18110              	.L58:
+ 148:../src/lcd1201/lcd1202.c ****         lcd_write_byte(b, 1);
+ 149:../src/lcd1201/lcd1202.c ****         if(++col >= lcdWidth())
+ 18111              		.loc 1 149 0 is_stmt 1
+ 18112 004a 0134     		adds	r4, r4, #1
+ 148:../src/lcd1201/lcd1202.c ****         lcd_write_byte(b, 1);
+ 18113              		.loc 1 148 0
+ 18114 004c 0121     		movs	r1, #1
+ 18115              		.loc 1 149 0
+ 18116 004e E4B2     		uxtb	r4, r4
+ 148:../src/lcd1201/lcd1202.c ****         lcd_write_byte(b, 1);
+ 18117              		.loc 1 148 0
+ 18118 0050 FFF7FEFF 		bl	lcd_write_byte
+ 18119              	.LVL40:
+ 18120              		.loc 1 149 0
+ 18121 0054 5F2C     		cmp	r4, #95
+ 18122 0056 05D9     		bls	.L59
+ 18123              	.L60:
+ 150:../src/lcd1201/lcd1202.c ****         {
+ 151:../src/lcd1201/lcd1202.c ****             lcd_cs_release();
+ 18124              		.loc 1 151 0 discriminator 1
+ 18125 0058 104B     		ldr	r3, .L68+12
+ 18126 005a 1B88     		ldrh	r3, [r3, #0]
+ 18127 005c 13F0400F 		tst	r3, #64
+ 18128 0060 FAD0     		beq	.L60
+ 18129 0062 0FE0     		b	.L67
+ 18130              	.L59:
+ 18131              	.LBE13:
+ 144:../src/lcd1201/lcd1202.c ****     for(i=0; i<fontWidth; i++)
+ 18132              		.loc 1 144 0
+ 18133 0064 0135     		adds	r5, r5, #1
+ 18134              	.LVL41:
+ 18135 0066 052D     		cmp	r5, #5
+ 18136 0068 E7D1     		bne	.L62
+ 18137              	.LVL42:
+ 152:../src/lcd1201/lcd1202.c ****             return;
+ 153:../src/lcd1201/lcd1202.c ****         }
+ 154:../src/lcd1201/lcd1202.c ****     }
+ 155:../src/lcd1201/lcd1202.c ****     for(i=0; i<fontSpace; i++)
+ 156:../src/lcd1201/lcd1202.c ****     {
+ 157:../src/lcd1201/lcd1202.c ****         if(lcd_flags.inverse_char)
+ 18138              		.loc 1 157 0 discriminator 1
+ 18139 006a 3078     		ldrb	r0, [r6, #0]	@ zero_extendqisi2
+ 18140 006c 10F00100 		ands	r0, r0, #1
+ 158:../src/lcd1201/lcd1202.c ****             lcd_write_byte(0xFF, 1);
+ 18141              		.loc 1 158 0 discriminator 1
+ 18142 0070 18BF     		it	ne
+ 18143 0072 FF20     		movne	r0, #255
+ 18144 0074 0121     		movs	r1, #1
+ 18145 0076 FFF7FEFF 		bl	lcd_write_byte
+ 18146              	.LVL43:
+ 18147              	.L65:
+ 159:../src/lcd1201/lcd1202.c ****         else
+ 160:../src/lcd1201/lcd1202.c ****             lcd_write_byte(0, 1);
+ 161:../src/lcd1201/lcd1202.c ****     }
+ 162:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 18148              		.loc 1 162 0 discriminator 1
+ 18149 007a 084B     		ldr	r3, .L68+12
+ 18150 007c 1B88     		ldrh	r3, [r3, #0]
+ 18151 007e 13F0400F 		tst	r3, #64
+ 18152 0082 FAD0     		beq	.L65
+ 18153              	.LVL44:
+ 18154              	.L67:
+ 18155              		.loc 1 162 0 is_stmt 0 discriminator 2
+ 18156 0084 034B     		ldr	r3, .L68+4
+ 18157 0086 4FF48062 		mov	r2, #1024
+ 18158 008a 1A61     		str	r2, [r3, #16]
+ 18159 008c F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 18160              	.L69:
+ 18161 008e 00BF     		.align	2
+ 18162              	.L68:
+ 18163 0090 00000000 		.word	.LANCHOR0
+ 18164 0094 00080140 		.word	1073809408
+ 18165 0098 00000000 		.word	lcd_flags
+ 18166 009c 00380140 		.word	1073821696
+ 18167              		.cfi_endproc
+ 18168              	.LFE41:
+ 18170              		.section	.text.lcd_str,"ax",%progbits
+ 18171              		.align	1
+ 18172              		.global	lcd_str
+ 18173              		.thumb
+ 18174              		.thumb_func
+ 18176              	lcd_str:
+ 18177              	.LFB42:
+ 163:../src/lcd1201/lcd1202.c **** }
+ 164:../src/lcd1201/lcd1202.c **** 
+ 165:../src/lcd1201/lcd1202.c **** void lcd_str(uint8_t row, uint8_t col, const char* str)
+ 166:../src/lcd1201/lcd1202.c **** {
+ 18178              		.loc 1 166 0 is_stmt 1
+ 18179              		.cfi_startproc
+ 18180              		@ args = 0, pretend = 0, frame = 0
+ 18181              		@ frame_needed = 0, uses_anonymous_args = 0
+ 18182              	.LVL45:
+ 18183 0000 70B5     		push	{r4, r5, r6, lr}
+ 18184              	.LCFI11:
+ 18185              		.cfi_def_cfa_offset 16
+ 18186              		.loc 1 166 0
+ 18187 0002 0646     		mov	r6, r0
+ 18188              		.cfi_offset 14, -4
+ 18189              		.cfi_offset 6, -8
+ 18190              		.cfi_offset 5, -12
+ 18191              		.cfi_offset 4, -16
+ 18192 0004 0C46     		mov	r4, r1
+ 18193 0006 1546     		mov	r5, r2
+ 167:../src/lcd1201/lcd1202.c ****     char c;
+ 168:../src/lcd1201/lcd1202.c ****     while((c = *str++) != 0)
+ 18194              		.loc 1 168 0
+ 18195 0008 07E0     		b	.L71
+ 18196              	.LVL46:
+ 18197              	.L73:
+ 169:../src/lcd1201/lcd1202.c ****     {
+ 170:../src/lcd1201/lcd1202.c ****         lcd_char(row, col, c);
+ 18198              		.loc 1 170 0
+ 18199 000a 2146     		mov	r1, r4
+ 171:../src/lcd1201/lcd1202.c ****         col += fontWidth + fontSpace;
+ 18200              		.loc 1 171 0
+ 18201 000c 0634     		adds	r4, r4, #6
+ 18202              	.LVL47:
+ 170:../src/lcd1201/lcd1202.c ****         lcd_char(row, col, c);
+ 18203              		.loc 1 170 0
+ 18204 000e 3046     		mov	r0, r6
+ 18205              		.loc 1 171 0
+ 18206 0010 E4B2     		uxtb	r4, r4
+ 170:../src/lcd1201/lcd1202.c ****         lcd_char(row, col, c);
+ 18207              		.loc 1 170 0
+ 18208 0012 FFF7FEFF 		bl	lcd_char
+ 18209              	.LVL48:
+ 172:../src/lcd1201/lcd1202.c ****         if(col >= lcdWidth()) return;
+ 18210              		.loc 1 172 0
+ 18211 0016 5F2C     		cmp	r4, #95
+ 18212 0018 03D8     		bhi	.L70
+ 18213              	.LVL49:
+ 18214              	.L71:
+ 168:../src/lcd1201/lcd1202.c ****     while((c = *str++) != 0)
+ 18215              		.loc 1 168 0 discriminator 1
+ 18216 001a 15F8012B 		ldrb	r2, [r5], #1	@ zero_extendqisi2
+ 18217              	.LVL50:
+ 18218 001e 002A     		cmp	r2, #0
+ 18219 0020 F3D1     		bne	.L73
+ 18220              	.LVL51:
+ 18221              	.L70:
+ 18222 0022 70BD     		pop	{r4, r5, r6, pc}
+ 18223              		.cfi_endproc
+ 18224              	.LFE42:
+ 18226              		.section	.text.lcd_str_center,"ax",%progbits
+ 18227              		.align	1
+ 18228              		.global	lcd_str_center
+ 18229              		.thumb
+ 18230              		.thumb_func
+ 18232              	lcd_str_center:
+ 18233              	.LFB43:
+ 173:../src/lcd1201/lcd1202.c ****     }
+ 174:../src/lcd1201/lcd1202.c **** }
+ 175:../src/lcd1201/lcd1202.c **** 
+ 176:../src/lcd1201/lcd1202.c **** void lcd_str_center(uint8_t row, const char* str)
+ 177:../src/lcd1201/lcd1202.c **** {
+ 18234              		.loc 1 177 0
+ 18235              		.cfi_startproc
+ 18236              		@ args = 0, pretend = 0, frame = 0
+ 18237              		@ frame_needed = 0, uses_anonymous_args = 0
+ 18238              	.LVL52:
+ 18239 0000 70B5     		push	{r4, r5, r6, lr}
+ 18240              	.LCFI12:
+ 18241              		.cfi_def_cfa_offset 16
+ 18242              		.loc 1 177 0
+ 18243 0002 0546     		mov	r5, r0
+ 18244              		.cfi_offset 14, -4
+ 18245              		.cfi_offset 6, -8
+ 18246              		.cfi_offset 5, -12
+ 18247              		.cfi_offset 4, -16
+ 178:../src/lcd1201/lcd1202.c ****     lcd_str(row,
+ 179:../src/lcd1201/lcd1202.c ****         (lcdWidth()-strlen(str)*(fontWidth+fontSpace))>>1,
+ 18248              		.loc 1 179 0
+ 18249 0004 0846     		mov	r0, r1
+ 18250              	.LVL53:
+ 177:../src/lcd1201/lcd1202.c **** {
+ 18251              		.loc 1 177 0
+ 18252 0006 0C46     		mov	r4, r1
+ 18253              		.loc 1 179 0
+ 18254 0008 FFF7FEFF 		bl	strlen
+ 18255              	.LVL54:
+ 18256 000c 0621     		movs	r1, #6
+ 18257 000e 4143     		muls	r1, r0, r1
+ 18258 0010 C1F16001 		rsb	r1, r1, #96
+ 18259 0014 4908     		lsrs	r1, r1, #1
+ 178:../src/lcd1201/lcd1202.c ****     lcd_str(row,
+ 18260              		.loc 1 178 0
+ 18261 0016 2846     		mov	r0, r5
+ 18262 0018 C9B2     		uxtb	r1, r1
+ 18263 001a 2246     		mov	r2, r4
+ 180:../src/lcd1201/lcd1202.c ****         str);
+ 181:../src/lcd1201/lcd1202.c **** }
+ 18264              		.loc 1 181 0
+ 18265 001c BDE87040 		pop	{r4, r5, r6, lr}
+ 178:../src/lcd1201/lcd1202.c ****     lcd_str(row,
+ 18266              		.loc 1 178 0
+ 18267 0020 FFF7FEBF 		b	lcd_str
+ 18268              		.cfi_endproc
+ 18269              	.LFE43:
+ 18271              		.section	.text.lcd_big_char,"ax",%progbits
+ 18272              		.align	1
+ 18273              		.global	lcd_big_char
+ 18274              		.thumb
+ 18275              		.thumb_func
+ 18277              	lcd_big_char:
+ 18278              	.LFB44:
+ 182:../src/lcd1201/lcd1202.c **** 
+ 183:../src/lcd1201/lcd1202.c **** void lcd_big_char(uint8_t row, uint8_t col, char chr)
+ 184:../src/lcd1201/lcd1202.c **** {
+ 18279              		.loc 1 184 0
+ 18280              		.cfi_startproc
+ 18281              		@ args = 0, pretend = 0, frame = 0
+ 18282              		@ frame_needed = 0, uses_anonymous_args = 0
+ 18283              	.LVL55:
+ 18284 0000 2DE9F843 		push	{r3, r4, r5, r6, r7, r8, r9, lr}
+ 18285              	.LCFI13:
+ 18286              		.cfi_def_cfa_offset 32
+ 185:../src/lcd1201/lcd1202.c ****     // uint8_t* f0 = fnt_terminus_24x14_bits + chr*14*(24/8);
+ 186:../src/lcd1201/lcd1202.c ****     const uint8_t* f0 = fnt_libera_24x14_bits + (chr-'0')*14*(24/8);
+ 187:../src/lcd1201/lcd1202.c ****     const uint8_t* f;
+ 188:../src/lcd1201/lcd1202.c ****     uint8_t r, c;
+ 189:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 18287              		.loc 1 189 0
+ 18288 0004 214B     		ldr	r3, .L80
+ 18289              		.cfi_offset 14, -4
+ 18290              		.cfi_offset 9, -8
+ 18291              		.cfi_offset 8, -12
+ 18292              		.cfi_offset 7, -16
+ 18293              		.cfi_offset 6, -20
+ 18294              		.cfi_offset 5, -24
+ 18295              		.cfi_offset 4, -28
+ 18296              		.cfi_offset 3, -32
+ 184:../src/lcd1201/lcd1202.c **** {
+ 18297              		.loc 1 184 0
+ 18298 0006 0C46     		mov	r4, r1
+ 18299              		.loc 1 189 0
+ 18300 0008 4FF48061 		mov	r1, #1024
+ 18301              	.LVL56:
+ 18302 000c 5961     		str	r1, [r3, #20]
+ 18303              	.LVL57:
+ 186:../src/lcd1201/lcd1202.c ****     const uint8_t* f0 = fnt_libera_24x14_bits + (chr-'0')*14*(24/8);
+ 18304              		.loc 1 186 0
+ 18305 000e 204B     		ldr	r3, .L80+4
+ 18306 0010 4FF02A09 		mov	r9, #42
+ 18307 0014 09FB0239 		mla	r9, r9, r2, r3
+ 190:../src/lcd1201/lcd1202.c ****     for(r = 0; r<3; r++)
+ 191:../src/lcd1201/lcd1202.c ****     {
+ 192:../src/lcd1201/lcd1202.c ****         f = f0 + r;
+ 193:../src/lcd1201/lcd1202.c ****         lcd_set_row(row+r);
+ 194:../src/lcd1201/lcd1202.c ****         lcd_set_col(col);
+ 18308              		.loc 1 194 0
+ 18309 0018 2509     		lsrs	r5, r4, #4
+ 184:../src/lcd1201/lcd1202.c **** {
+ 18310              		.loc 1 184 0
+ 18311 001a 0646     		mov	r6, r0
+ 18312              		.loc 1 194 0
+ 18313 001c 45F01005 		orr	r5, r5, #16
+ 190:../src/lcd1201/lcd1202.c ****     for(r = 0; r<3; r++)
+ 18314              		.loc 1 190 0
+ 18315 0020 0027     		movs	r7, #0
+ 18316              	.LVL58:
+ 18317              	.L78:
+ 183:../src/lcd1201/lcd1202.c **** void lcd_big_char(uint8_t row, uint8_t col, char chr)
+ 18318              		.loc 1 183 0
+ 18319 0022 B819     		adds	r0, r7, r6
+ 193:../src/lcd1201/lcd1202.c ****         lcd_set_row(row+r);
+ 18320              		.loc 1 193 0
+ 18321 0024 00F00F00 		and	r0, r0, #15
+ 18322 0028 40F0B000 		orr	r0, r0, #176
+ 18323 002c 0021     		movs	r1, #0
+ 18324 002e FFF7FEFF 		bl	lcd_write_byte
+ 18325              		.loc 1 194 0
+ 18326 0032 2846     		mov	r0, r5
+ 18327 0034 0021     		movs	r1, #0
+ 18328 0036 FFF7FEFF 		bl	lcd_write_byte
+ 18329 003a 04F00F00 		and	r0, r4, #15
+ 18330 003e 0021     		movs	r1, #0
+ 18331 0040 FFF7FEFF 		bl	lcd_write_byte
+ 18332              	.LVL59:
+ 18333 0044 4FF00008 		mov	r8, #0
+ 18334              	.LVL60:
+ 18335              	.L77:
+ 18336              	.LBB14:
+ 195:../src/lcd1201/lcd1202.c ****         for(c = 0; c<14; c++)
+ 196:../src/lcd1201/lcd1202.c ****         {
+ 197:../src/lcd1201/lcd1202.c ****             uint8_t b = *f;
+ 198:../src/lcd1201/lcd1202.c ****             if(lcd_flags.inverse_char) b = ~b;
+ 18337              		.loc 1 198 0
+ 18338 0048 124B     		ldr	r3, .L80+8
+ 197:../src/lcd1201/lcd1202.c ****             uint8_t b = *f;
+ 18339              		.loc 1 197 0
+ 18340 004a 19F80800 		ldrb	r0, [r9, r8]	@ zero_extendqisi2
+ 18341              	.LVL61:
+ 18342              		.loc 1 198 0
+ 18343 004e 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 18344 0050 13F0010F 		tst	r3, #1
+ 18345 0054 01D0     		beq	.L76
+ 18346              		.loc 1 198 0 is_stmt 0 discriminator 1
+ 18347 0056 C043     		mvns	r0, r0
+ 18348              	.LVL62:
+ 18349 0058 C0B2     		uxtb	r0, r0
+ 18350              	.LVL63:
+ 18351              	.L76:
+ 199:../src/lcd1201/lcd1202.c ****             lcd_write_byte(b, 1);
+ 18352              		.loc 1 199 0 is_stmt 1
+ 18353 005a 0121     		movs	r1, #1
+ 18354 005c 08F10308 		add	r8, r8, #3
+ 18355 0060 FFF7FEFF 		bl	lcd_write_byte
+ 18356              	.LVL64:
+ 18357              	.LBE14:
+ 195:../src/lcd1201/lcd1202.c ****         for(c = 0; c<14; c++)
+ 18358              		.loc 1 195 0
+ 18359 0064 B8F12A0F 		cmp	r8, #42
+ 18360 0068 EED1     		bne	.L77
+ 190:../src/lcd1201/lcd1202.c ****     for(r = 0; r<3; r++)
+ 18361              		.loc 1 190 0
+ 18362 006a 0137     		adds	r7, r7, #1
+ 18363 006c FFB2     		uxtb	r7, r7
+ 18364              	.LVL65:
+ 18365 006e 032F     		cmp	r7, #3
+ 18366 0070 09F10109 		add	r9, r9, #1
+ 18367 0074 D5D1     		bne	.L78
+ 18368              	.L79:
+ 200:../src/lcd1201/lcd1202.c ****             f += 3;
+ 201:../src/lcd1201/lcd1202.c ****         }
+ 202:../src/lcd1201/lcd1202.c ****     }
+ 203:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 18369              		.loc 1 203 0 discriminator 1
+ 18370 0076 084B     		ldr	r3, .L80+12
+ 18371 0078 1B88     		ldrh	r3, [r3, #0]
+ 18372 007a 13F0400F 		tst	r3, #64
+ 18373 007e FAD0     		beq	.L79
+ 18374              		.loc 1 203 0 is_stmt 0 discriminator 2
+ 18375 0080 024B     		ldr	r3, .L80
+ 18376 0082 4FF48062 		mov	r2, #1024
+ 18377 0086 1A61     		str	r2, [r3, #16]
+ 204:../src/lcd1201/lcd1202.c **** }
+ 18378              		.loc 1 204 0 is_stmt 1 discriminator 2
+ 18379 0088 BDE8F883 		pop	{r3, r4, r5, r6, r7, r8, r9, pc}
+ 18380              	.L81:
+ 18381              		.align	2
+ 18382              	.L80:
+ 18383 008c 00080140 		.word	1073809408
+ 18384 0090 20F8FFFF 		.word	.LANCHOR1-2016
+ 18385 0094 00000000 		.word	lcd_flags
+ 18386 0098 00380140 		.word	1073821696
+ 18387              		.cfi_endproc
+ 18388              	.LFE44:
+ 18390              		.section	.text.lcd_big_str,"ax",%progbits
+ 18391              		.align	1
+ 18392              		.global	lcd_big_str
+ 18393              		.thumb
+ 18394              		.thumb_func
+ 18396              	lcd_big_str:
+ 18397              	.LFB45:
+ 205:../src/lcd1201/lcd1202.c **** 
+ 206:../src/lcd1201/lcd1202.c **** void lcd_big_str(uint8_t row, uint8_t col, const char* str)
+ 207:../src/lcd1201/lcd1202.c **** {
+ 18398              		.loc 1 207 0
+ 18399              		.cfi_startproc
+ 18400              		@ args = 0, pretend = 0, frame = 0
+ 18401              		@ frame_needed = 0, uses_anonymous_args = 0
+ 18402              	.LVL66:
+ 18403 0000 70B5     		push	{r4, r5, r6, lr}
+ 18404              	.LCFI14:
+ 18405              		.cfi_def_cfa_offset 16
+ 18406              		.loc 1 207 0
+ 18407 0002 0646     		mov	r6, r0
+ 18408              		.cfi_offset 14, -4
+ 18409              		.cfi_offset 6, -8
+ 18410              		.cfi_offset 5, -12
+ 18411              		.cfi_offset 4, -16
+ 18412 0004 0C46     		mov	r4, r1
+ 18413 0006 1546     		mov	r5, r2
+ 208:../src/lcd1201/lcd1202.c ****     char c;
+ 209:../src/lcd1201/lcd1202.c ****     while((c = *str++) != 0)
+ 18414              		.loc 1 209 0
+ 18415 0008 07E0     		b	.L83
+ 18416              	.LVL67:
+ 18417              	.L85:
+ 210:../src/lcd1201/lcd1202.c ****     {
+ 211:../src/lcd1201/lcd1202.c ****         lcd_char(row, col, c);
+ 18418              		.loc 1 211 0
+ 18419 000a 2146     		mov	r1, r4
+ 212:../src/lcd1201/lcd1202.c ****         col += fnt_libera_24x14_width;
+ 18420              		.loc 1 212 0
+ 18421 000c 1834     		adds	r4, r4, #24
+ 18422              	.LVL68:
+ 211:../src/lcd1201/lcd1202.c ****         lcd_char(row, col, c);
+ 18423              		.loc 1 211 0
+ 18424 000e 3046     		mov	r0, r6
+ 18425              		.loc 1 212 0
+ 18426 0010 E4B2     		uxtb	r4, r4
+ 211:../src/lcd1201/lcd1202.c ****         lcd_char(row, col, c);
+ 18427              		.loc 1 211 0
+ 18428 0012 FFF7FEFF 		bl	lcd_char
+ 18429              	.LVL69:
+ 213:../src/lcd1201/lcd1202.c ****         if(col >= lcdWidth()) return;
+ 18430              		.loc 1 213 0
+ 18431 0016 5F2C     		cmp	r4, #95
+ 18432 0018 03D8     		bhi	.L82
+ 18433              	.LVL70:
+ 18434              	.L83:
+ 209:../src/lcd1201/lcd1202.c ****     while((c = *str++) != 0)
+ 18435              		.loc 1 209 0 discriminator 1
+ 18436 001a 15F8012B 		ldrb	r2, [r5], #1	@ zero_extendqisi2
+ 18437              	.LVL71:
+ 18438 001e 002A     		cmp	r2, #0
+ 18439 0020 F3D1     		bne	.L85
+ 18440              	.LVL72:
+ 18441              	.L82:
+ 18442 0022 70BD     		pop	{r4, r5, r6, pc}
+ 18443              		.cfi_endproc
+ 18444              	.LFE45:
+ 18446              		.section	.text.lcd_big_str_center,"ax",%progbits
+ 18447              		.align	1
+ 18448              		.global	lcd_big_str_center
+ 18449              		.thumb
+ 18450              		.thumb_func
+ 18452              	lcd_big_str_center:
+ 18453              	.LFB46:
+ 214:../src/lcd1201/lcd1202.c ****     }
+ 215:../src/lcd1201/lcd1202.c **** }
+ 216:../src/lcd1201/lcd1202.c **** 
+ 217:../src/lcd1201/lcd1202.c **** void lcd_big_str_center(uint8_t row, const char* str)
+ 218:../src/lcd1201/lcd1202.c **** {
+ 18454              		.loc 1 218 0
+ 18455              		.cfi_startproc
+ 18456              		@ args = 0, pretend = 0, frame = 0
+ 18457              		@ frame_needed = 0, uses_anonymous_args = 0
+ 18458              	.LVL73:
+ 18459 0000 70B5     		push	{r4, r5, r6, lr}
+ 18460              	.LCFI15:
+ 18461              		.cfi_def_cfa_offset 16
+ 18462              		.loc 1 218 0
+ 18463 0002 0546     		mov	r5, r0
+ 18464              		.cfi_offset 14, -4
+ 18465              		.cfi_offset 6, -8
+ 18466              		.cfi_offset 5, -12
+ 18467              		.cfi_offset 4, -16
+ 219:../src/lcd1201/lcd1202.c ****     lcd_big_str(row,
+ 220:../src/lcd1201/lcd1202.c ****         (lcdWidth()-strlen(str)*fnt_libera_24x14_width)>>1,
+ 18468              		.loc 1 220 0
+ 18469 0004 0846     		mov	r0, r1
+ 18470              	.LVL74:
+ 218:../src/lcd1201/lcd1202.c **** {
+ 18471              		.loc 1 218 0
+ 18472 0006 0C46     		mov	r4, r1
+ 18473              		.loc 1 220 0
+ 18474 0008 FFF7FEFF 		bl	strlen
+ 18475              	.LVL75:
+ 18476 000c 1821     		movs	r1, #24
+ 18477 000e 4143     		muls	r1, r0, r1
+ 18478 0010 C1F16001 		rsb	r1, r1, #96
+ 18479 0014 4908     		lsrs	r1, r1, #1
+ 219:../src/lcd1201/lcd1202.c ****     lcd_big_str(row,
+ 18480              		.loc 1 219 0
+ 18481 0016 2846     		mov	r0, r5
+ 18482 0018 01F0FC01 		and	r1, r1, #252
+ 18483 001c 2246     		mov	r2, r4
+ 221:../src/lcd1201/lcd1202.c ****         str);
+ 222:../src/lcd1201/lcd1202.c **** }
+ 18484              		.loc 1 222 0
+ 18485 001e BDE87040 		pop	{r4, r5, r6, lr}
+ 219:../src/lcd1201/lcd1202.c ****     lcd_big_str(row,
+ 18486              		.loc 1 219 0
+ 18487 0022 FFF7FEBF 		b	lcd_big_str
+ 18488              		.cfi_endproc
+ 18489              	.LFE46:
+ 18491              		.section	.text.lcd_image,"ax",%progbits
+ 18492              		.align	1
+ 18493              		.global	lcd_image
+ 18494              		.thumb
+ 18495              		.thumb_func
+ 18497              	lcd_image:
+ 18498              	.LFB47:
+ 223:../src/lcd1201/lcd1202.c **** 
+ 224:../src/lcd1201/lcd1202.c **** void lcd_image(uint8_t row, uint8_t col,
+ 225:../src/lcd1201/lcd1202.c ****         uint8_t height, uint8_t widht,
+ 226:../src/lcd1201/lcd1202.c ****         const uint8_t* img)
+ 227:../src/lcd1201/lcd1202.c **** {
+ 18499              		.loc 1 227 0
+ 18500              		.cfi_startproc
+ 18501              		@ args = 4, pretend = 0, frame = 8
+ 18502              		@ frame_needed = 0, uses_anonymous_args = 0
+ 18503              	.LVL76:
+ 18504 0000 2DE9F74F 		push	{r0, r1, r2, r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 18505              	.LCFI16:
+ 18506              		.cfi_def_cfa_offset 48
+ 18507              		.loc 1 227 0
+ 18508 0004 9946     		mov	r9, r3
+ 18509              		.cfi_offset 14, -4
+ 18510              		.cfi_offset 11, -8
+ 18511              		.cfi_offset 10, -12
+ 18512              		.cfi_offset 9, -16
+ 18513              		.cfi_offset 8, -20
+ 18514              		.cfi_offset 7, -24
+ 18515              		.cfi_offset 6, -28
+ 18516              		.cfi_offset 5, -32
+ 18517              		.cfi_offset 4, -36
+ 18518              		.cfi_offset 2, -40
+ 18519              		.cfi_offset 1, -44
+ 18520              		.cfi_offset 0, -48
+ 228:../src/lcd1201/lcd1202.c ****     uint8_t r, c;
+ 229:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 18521              		.loc 1 229 0
+ 18522 0006 234B     		ldr	r3, .L94
+ 18523              	.LVL77:
+ 227:../src/lcd1201/lcd1202.c **** {
+ 18524              		.loc 1 227 0
+ 18525 0008 1546     		mov	r5, r2
+ 230:../src/lcd1201/lcd1202.c ****     for(r = 0; r < height; r++)
+ 231:../src/lcd1201/lcd1202.c ****     {
+ 232:../src/lcd1201/lcd1202.c ****         lcd_set_row(row+r);
+ 233:../src/lcd1201/lcd1202.c ****         lcd_set_col(col);
+ 18526              		.loc 1 233 0
+ 18527 000a 4FEA111B 		lsr	fp, r1, #4
+ 229:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 18528              		.loc 1 229 0
+ 18529 000e 4FF48062 		mov	r2, #1024
+ 18530              	.LVL78:
+ 227:../src/lcd1201/lcd1202.c **** {
+ 18531              		.loc 1 227 0
+ 18532 0012 0190     		str	r0, [sp, #4]
+ 18533 0014 0C9F     		ldr	r7, [sp, #48]
+ 18534 0016 0C46     		mov	r4, r1
+ 229:../src/lcd1201/lcd1202.c ****     lcd_cs_mark();
+ 18535              		.loc 1 229 0
+ 18536 0018 5A61     		str	r2, [r3, #20]
+ 18537              	.LVL79:
+ 18538              		.loc 1 233 0
+ 18539 001a 4BF0100B 		orr	fp, fp, #16
+ 230:../src/lcd1201/lcd1202.c ****     for(r = 0; r < height; r++)
+ 18540              		.loc 1 230 0
+ 18541 001e 0026     		movs	r6, #0
+ 18542 0020 2AE0     		b	.L88
+ 18543              	.LVL80:
+ 18544              	.L92:
+ 224:../src/lcd1201/lcd1202.c **** void lcd_image(uint8_t row, uint8_t col,
+ 18545              		.loc 1 224 0
+ 18546 0022 019B     		ldr	r3, [sp, #4]
+ 232:../src/lcd1201/lcd1202.c ****         lcd_set_row(row+r);
+ 18547              		.loc 1 232 0
+ 18548 0024 0021     		movs	r1, #0
+ 224:../src/lcd1201/lcd1202.c **** void lcd_image(uint8_t row, uint8_t col,
+ 18549              		.loc 1 224 0
+ 18550 0026 F018     		adds	r0, r6, r3
+ 232:../src/lcd1201/lcd1202.c ****         lcd_set_row(row+r);
+ 18551              		.loc 1 232 0
+ 18552 0028 00F00F00 		and	r0, r0, #15
+ 18553 002c 40F0B000 		orr	r0, r0, #176
+ 18554 0030 FFF7FEFF 		bl	lcd_write_byte
+ 18555              		.loc 1 233 0
+ 18556 0034 5846     		mov	r0, fp
+ 18557 0036 0021     		movs	r1, #0
+ 18558 0038 FFF7FEFF 		bl	lcd_write_byte
+ 18559 003c 04F00F00 		and	r0, r4, #15
+ 18560 0040 0021     		movs	r1, #0
+ 18561 0042 FFF7FEFF 		bl	lcd_write_byte
+ 18562              	.LVL81:
+ 234:../src/lcd1201/lcd1202.c ****         for(c = 0; c < widht; c++)
+ 18563              		.loc 1 234 0
+ 18564 0046 BA46     		mov	sl, r7
+ 18565 0048 4FF00008 		mov	r8, #0
+ 18566 004c 0FE0     		b	.L89
+ 18567              	.LVL82:
+ 18568              	.L91:
+ 18569              	.LBB15:
+ 235:../src/lcd1201/lcd1202.c ****         {
+ 236:../src/lcd1201/lcd1202.c ****             uint8_t b = *img++;
+ 237:../src/lcd1201/lcd1202.c ****             if(lcd_flags.inverse_char) b = ~b;
+ 18570              		.loc 1 237 0
+ 18571 004e 124B     		ldr	r3, .L94+4
+ 236:../src/lcd1201/lcd1202.c ****             uint8_t b = *img++;
+ 18572              		.loc 1 236 0
+ 18573 0050 1AF8010B 		ldrb	r0, [sl], #1	@ zero_extendqisi2
+ 18574              	.LVL83:
+ 18575              		.loc 1 237 0
+ 18576 0054 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 18577 0056 13F0010F 		tst	r3, #1
+ 18578 005a 01D0     		beq	.L90
+ 18579              		.loc 1 237 0 is_stmt 0 discriminator 1
+ 18580 005c C043     		mvns	r0, r0
+ 18581              	.LVL84:
+ 18582 005e C0B2     		uxtb	r0, r0
+ 18583              	.LVL85:
+ 18584              	.L90:
+ 238:../src/lcd1201/lcd1202.c ****             lcd_write_byte(b, 1);
+ 18585              		.loc 1 238 0 is_stmt 1
+ 18586 0060 0121     		movs	r1, #1
+ 18587 0062 FFF7FEFF 		bl	lcd_write_byte
+ 18588              	.LVL86:
+ 18589              	.LBE15:
+ 234:../src/lcd1201/lcd1202.c ****         for(c = 0; c < widht; c++)
+ 18590              		.loc 1 234 0
+ 18591 0066 08F10108 		add	r8, r8, #1
+ 18592              	.LVL87:
+ 18593 006a 5FFA88F8 		uxtb	r8, r8
+ 18594              	.LVL88:
+ 18595              	.L89:
+ 234:../src/lcd1201/lcd1202.c ****         for(c = 0; c < widht; c++)
+ 18596              		.loc 1 234 0 is_stmt 0 discriminator 1
+ 18597 006e C845     		cmp	r8, r9
+ 18598 0070 EDD1     		bne	.L91
+ 230:../src/lcd1201/lcd1202.c ****     for(r = 0; r < height; r++)
+ 18599              		.loc 1 230 0 is_stmt 1
+ 18600 0072 0136     		adds	r6, r6, #1
+ 18601              	.LVL89:
+ 224:../src/lcd1201/lcd1202.c **** void lcd_image(uint8_t row, uint8_t col,
+ 18602              		.loc 1 224 0
+ 18603 0074 4F44     		add	r7, r7, r9
+ 230:../src/lcd1201/lcd1202.c ****     for(r = 0; r < height; r++)
+ 18604              		.loc 1 230 0
+ 18605 0076 F6B2     		uxtb	r6, r6
+ 18606              	.LVL90:
+ 18607              	.L88:
+ 230:../src/lcd1201/lcd1202.c ****     for(r = 0; r < height; r++)
+ 18608              		.loc 1 230 0 is_stmt 0 discriminator 1
+ 18609 0078 AE42     		cmp	r6, r5
+ 18610 007a D2D1     		bne	.L92
+ 18611              	.L93:
+ 239:../src/lcd1201/lcd1202.c ****         }
+ 240:../src/lcd1201/lcd1202.c ****     }
+ 241:../src/lcd1201/lcd1202.c ****     lcd_cs_release();
+ 18612              		.loc 1 241 0 is_stmt 1 discriminator 1
+ 18613 007c 074B     		ldr	r3, .L94+8
+ 18614 007e 1B88     		ldrh	r3, [r3, #0]
+ 18615 0080 13F0400F 		tst	r3, #64
+ 18616 0084 FAD0     		beq	.L93
+ 18617              		.loc 1 241 0 is_stmt 0 discriminator 2
+ 18618 0086 034B     		ldr	r3, .L94
+ 18619 0088 4FF48062 		mov	r2, #1024
+ 18620 008c 1A61     		str	r2, [r3, #16]
+ 242:../src/lcd1201/lcd1202.c **** }
+ 18621              		.loc 1 242 0 is_stmt 1 discriminator 2
+ 18622 008e BDE8FE8F 		pop	{r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, pc}
+ 18623              	.L95:
+ 18624 0092 00BF     		.align	2
+ 18625              	.L94:
+ 18626 0094 00080140 		.word	1073809408
+ 18627 0098 00000000 		.word	lcd_flags
+ 18628 009c 00380140 		.word	1073821696
+ 18629              		.cfi_endproc
+ 18630              	.LFE47:
+ 18632              		.global	font5x8
+ 18633              		.comm	lcd_flags,4,4
+ 18634              		.section	.rodata.font5x8,"a",%progbits
+ 18635              		.set	.LANCHOR0,. + 0
+ 18638              	font5x8:
+ 18639 0000 00       		.byte	0
+ 18640 0001 00       		.byte	0
+ 18641 0002 00       		.byte	0
+ 18642 0003 00       		.byte	0
+ 18643 0004 00       		.byte	0
+ 18644 0005 10       		.byte	16
+ 18645 0006 26       		.byte	38
+ 18646 0007 20       		.byte	32
+ 18647 0008 26       		.byte	38
+ 18648 0009 10       		.byte	16
+ 18649 000a 3E       		.byte	62
+ 18650 000b 6B       		.byte	107
+ 18651 000c 5F       		.byte	95
+ 18652 000d 6B       		.byte	107
+ 18653 000e 3E       		.byte	62
+ 18654 000f 1C       		.byte	28
+ 18655 0010 3E       		.byte	62
+ 18656 0011 7C       		.byte	124
+ 18657 0012 3E       		.byte	62
+ 18658 0013 1C       		.byte	28
+ 18659 0014 18       		.byte	24
+ 18660 0015 3C       		.byte	60
+ 18661 0016 7E       		.byte	126
+ 18662 0017 3C       		.byte	60
+ 18663 0018 18       		.byte	24
+ 18664 0019 04       		.byte	4
+ 18665 001a 44       		.byte	68
+ 18666 001b 7F       		.byte	127
+ 18667 001c 44       		.byte	68
+ 18668 001d 04       		.byte	4
+ 18669 001e 0C       		.byte	12
+ 18670 001f 5E       		.byte	94
+ 18671 0020 7F       		.byte	127
+ 18672 0021 5E       		.byte	94
+ 18673 0022 0C       		.byte	12
+ 18674 0023 1C       		.byte	28
+ 18675 0024 3E       		.byte	62
+ 18676 0025 3E       		.byte	62
+ 18677 0026 3E       		.byte	62
+ 18678 0027 1C       		.byte	28
+ 18679 0028 FF       		.byte	-1
+ 18680 0029 E7       		.byte	-25
+ 18681 002a C3       		.byte	-61
+ 18682 002b E7       		.byte	-25
+ 18683 002c FF       		.byte	-1
+ 18684 002d 08       		.byte	8
+ 18685 002e 08       		.byte	8
+ 18686 002f 2A       		.byte	42
+ 18687 0030 1C       		.byte	28
+ 18688 0031 08       		.byte	8
+ 18689 0032 08       		.byte	8
+ 18690 0033 1C       		.byte	28
+ 18691 0034 3E       		.byte	62
+ 18692 0035 08       		.byte	8
+ 18693 0036 0F       		.byte	15
+ 18694 0037 30       		.byte	48
+ 18695 0038 48       		.byte	72
+ 18696 0039 4C       		.byte	76
+ 18697 003a 31       		.byte	49
+ 18698 003b 03       		.byte	3
+ 18699 003c 06       		.byte	6
+ 18700 003d 29       		.byte	41
+ 18701 003e 79       		.byte	121
+ 18702 003f 29       		.byte	41
+ 18703 0040 06       		.byte	6
+ 18704 0041 08       		.byte	8
+ 18705 0042 1C       		.byte	28
+ 18706 0043 3E       		.byte	62
+ 18707 0044 08       		.byte	8
+ 18708 0045 08       		.byte	8
+ 18709 0046 30       		.byte	48
+ 18710 0047 3F       		.byte	63
+ 18711 0048 01       		.byte	1
+ 18712 0049 62       		.byte	98
+ 18713 004a 7C       		.byte	124
+ 18714 004b 08       		.byte	8
+ 18715 004c 1C       		.byte	28
+ 18716 004d 36       		.byte	54
+ 18717 004e 1C       		.byte	28
+ 18718 004f 08       		.byte	8
+ 18719 0050 00       		.byte	0
+ 18720 0051 7F       		.byte	127
+ 18721 0052 3E       		.byte	62
+ 18722 0053 1C       		.byte	28
+ 18723 0054 08       		.byte	8
+ 18724 0055 08       		.byte	8
+ 18725 0056 1C       		.byte	28
+ 18726 0057 3E       		.byte	62
+ 18727 0058 7F       		.byte	127
+ 18728 0059 00       		.byte	0
+ 18729 005a 14       		.byte	20
+ 18730 005b 36       		.byte	54
+ 18731 005c 7F       		.byte	127
+ 18732 005d 36       		.byte	54
+ 18733 005e 14       		.byte	20
+ 18734 005f 00       		.byte	0
+ 18735 0060 5F       		.byte	95
+ 18736 0061 00       		.byte	0
+ 18737 0062 5F       		.byte	95
+ 18738 0063 00       		.byte	0
+ 18739 0064 06       		.byte	6
+ 18740 0065 0F       		.byte	15
+ 18741 0066 7F       		.byte	127
+ 18742 0067 01       		.byte	1
+ 18743 0068 7F       		.byte	127
+ 18744 0069 40       		.byte	64
+ 18745 006a 4A       		.byte	74
+ 18746 006b 55       		.byte	85
+ 18747 006c 29       		.byte	41
+ 18748 006d 01       		.byte	1
+ 18749 006e 7C       		.byte	124
+ 18750 006f 7C       		.byte	124
+ 18751 0070 7C       		.byte	124
+ 18752 0071 7C       		.byte	124
+ 18753 0072 7C       		.byte	124
+ 18754 0073 94       		.byte	-108
+ 18755 0074 B6       		.byte	-74
+ 18756 0075 FF       		.byte	-1
+ 18757 0076 B6       		.byte	-74
+ 18758 0077 94       		.byte	-108
+ 18759 0078 04       		.byte	4
+ 18760 0079 06       		.byte	6
+ 18761 007a 7F       		.byte	127
+ 18762 007b 06       		.byte	6
+ 18763 007c 04       		.byte	4
+ 18764 007d 10       		.byte	16
+ 18765 007e 30       		.byte	48
+ 18766 007f 7F       		.byte	127
+ 18767 0080 30       		.byte	48
+ 18768 0081 10       		.byte	16
+ 18769 0082 00       		.byte	0
+ 18770 0083 00       		.byte	0
+ 18771 0084 00       		.byte	0
+ 18772 0085 00       		.byte	0
+ 18773 0086 00       		.byte	0
+ 18774 0087 08       		.byte	8
+ 18775 0088 1C       		.byte	28
+ 18776 0089 2A       		.byte	42
+ 18777 008a 08       		.byte	8
+ 18778 008b 08       		.byte	8
+ 18779 008c 0E       		.byte	14
+ 18780 008d 08       		.byte	8
+ 18781 008e 08       		.byte	8
+ 18782 008f 08       		.byte	8
+ 18783 0090 08       		.byte	8
+ 18784 0091 08       		.byte	8
+ 18785 0092 1C       		.byte	28
+ 18786 0093 08       		.byte	8
+ 18787 0094 1C       		.byte	28
+ 18788 0095 08       		.byte	8
+ 18789 0096 18       		.byte	24
+ 18790 0097 1C       		.byte	28
+ 18791 0098 1E       		.byte	30
+ 18792 0099 1C       		.byte	28
+ 18793 009a 18       		.byte	24
+ 18794 009b 18       		.byte	24
+ 18795 009c 38       		.byte	56
+ 18796 009d 78       		.byte	120
+ 18797 009e 38       		.byte	56
+ 18798 009f 18       		.byte	24
+ 18799 00a0 00       		.byte	0
+ 18800 00a1 00       		.byte	0
+ 18801 00a2 00       		.byte	0
+ 18802 00a3 00       		.byte	0
+ 18803 00a4 00       		.byte	0
+ 18804 00a5 00       		.byte	0
+ 18805 00a6 00       		.byte	0
+ 18806 00a7 5F       		.byte	95
+ 18807 00a8 00       		.byte	0
+ 18808 00a9 00       		.byte	0
+ 18809 00aa 00       		.byte	0
+ 18810 00ab 07       		.byte	7
+ 18811 00ac 00       		.byte	0
+ 18812 00ad 07       		.byte	7
+ 18813 00ae 00       		.byte	0
+ 18814 00af 14       		.byte	20
+ 18815 00b0 7F       		.byte	127
+ 18816 00b1 14       		.byte	20
+ 18817 00b2 7F       		.byte	127
+ 18818 00b3 14       		.byte	20
+ 18819 00b4 24       		.byte	36
+ 18820 00b5 2A       		.byte	42
+ 18821 00b6 7F       		.byte	127
+ 18822 00b7 2A       		.byte	42
+ 18823 00b8 12       		.byte	18
+ 18824 00b9 23       		.byte	35
+ 18825 00ba 13       		.byte	19
+ 18826 00bb 08       		.byte	8
+ 18827 00bc 64       		.byte	100
+ 18828 00bd 62       		.byte	98
+ 18829 00be 36       		.byte	54
+ 18830 00bf 49       		.byte	73
+ 18831 00c0 55       		.byte	85
+ 18832 00c1 22       		.byte	34
+ 18833 00c2 50       		.byte	80
+ 18834 00c3 00       		.byte	0
+ 18835 00c4 05       		.byte	5
+ 18836 00c5 03       		.byte	3
+ 18837 00c6 00       		.byte	0
+ 18838 00c7 00       		.byte	0
+ 18839 00c8 00       		.byte	0
+ 18840 00c9 1C       		.byte	28
+ 18841 00ca 22       		.byte	34
+ 18842 00cb 41       		.byte	65
+ 18843 00cc 00       		.byte	0
+ 18844 00cd 00       		.byte	0
+ 18845 00ce 41       		.byte	65
+ 18846 00cf 22       		.byte	34
+ 18847 00d0 1C       		.byte	28
+ 18848 00d1 00       		.byte	0
+ 18849 00d2 08       		.byte	8
+ 18850 00d3 2A       		.byte	42
+ 18851 00d4 1C       		.byte	28
+ 18852 00d5 2A       		.byte	42
+ 18853 00d6 08       		.byte	8
+ 18854 00d7 08       		.byte	8
+ 18855 00d8 08       		.byte	8
+ 18856 00d9 3E       		.byte	62
+ 18857 00da 08       		.byte	8
+ 18858 00db 08       		.byte	8
+ 18859 00dc 00       		.byte	0
+ 18860 00dd 50       		.byte	80
+ 18861 00de 30       		.byte	48
+ 18862 00df 00       		.byte	0
+ 18863 00e0 00       		.byte	0
+ 18864 00e1 08       		.byte	8
+ 18865 00e2 08       		.byte	8
+ 18866 00e3 08       		.byte	8
+ 18867 00e4 08       		.byte	8
+ 18868 00e5 08       		.byte	8
+ 18869 00e6 00       		.byte	0
+ 18870 00e7 60       		.byte	96
+ 18871 00e8 60       		.byte	96
+ 18872 00e9 00       		.byte	0
+ 18873 00ea 00       		.byte	0
+ 18874 00eb 20       		.byte	32
+ 18875 00ec 10       		.byte	16
+ 18876 00ed 08       		.byte	8
+ 18877 00ee 04       		.byte	4
+ 18878 00ef 02       		.byte	2
+ 18879 00f0 3E       		.byte	62
+ 18880 00f1 51       		.byte	81
+ 18881 00f2 49       		.byte	73
+ 18882 00f3 45       		.byte	69
+ 18883 00f4 3E       		.byte	62
+ 18884 00f5 00       		.byte	0
+ 18885 00f6 42       		.byte	66
+ 18886 00f7 7F       		.byte	127
+ 18887 00f8 40       		.byte	64
+ 18888 00f9 00       		.byte	0
+ 18889 00fa 42       		.byte	66
+ 18890 00fb 61       		.byte	97
+ 18891 00fc 51       		.byte	81
+ 18892 00fd 49       		.byte	73
+ 18893 00fe 46       		.byte	70
+ 18894 00ff 21       		.byte	33
+ 18895 0100 41       		.byte	65
+ 18896 0101 45       		.byte	69
+ 18897 0102 4B       		.byte	75
+ 18898 0103 31       		.byte	49
+ 18899 0104 18       		.byte	24
+ 18900 0105 14       		.byte	20
+ 18901 0106 12       		.byte	18
+ 18902 0107 7F       		.byte	127
+ 18903 0108 10       		.byte	16
+ 18904 0109 27       		.byte	39
+ 18905 010a 45       		.byte	69
+ 18906 010b 45       		.byte	69
+ 18907 010c 45       		.byte	69
+ 18908 010d 39       		.byte	57
+ 18909 010e 3C       		.byte	60
+ 18910 010f 4A       		.byte	74
+ 18911 0110 49       		.byte	73
+ 18912 0111 49       		.byte	73
+ 18913 0112 30       		.byte	48
+ 18914 0113 01       		.byte	1
+ 18915 0114 71       		.byte	113
+ 18916 0115 09       		.byte	9
+ 18917 0116 05       		.byte	5
+ 18918 0117 03       		.byte	3
+ 18919 0118 36       		.byte	54
+ 18920 0119 49       		.byte	73
+ 18921 011a 49       		.byte	73
+ 18922 011b 49       		.byte	73
+ 18923 011c 36       		.byte	54
+ 18924 011d 06       		.byte	6
+ 18925 011e 49       		.byte	73
+ 18926 011f 49       		.byte	73
+ 18927 0120 29       		.byte	41
+ 18928 0121 1E       		.byte	30
+ 18929 0122 00       		.byte	0
+ 18930 0123 36       		.byte	54
+ 18931 0124 36       		.byte	54
+ 18932 0125 00       		.byte	0
+ 18933 0126 00       		.byte	0
+ 18934 0127 00       		.byte	0
+ 18935 0128 56       		.byte	86
+ 18936 0129 36       		.byte	54
+ 18937 012a 00       		.byte	0
+ 18938 012b 00       		.byte	0
+ 18939 012c 00       		.byte	0
+ 18940 012d 08       		.byte	8
+ 18941 012e 14       		.byte	20
+ 18942 012f 22       		.byte	34
+ 18943 0130 41       		.byte	65
+ 18944 0131 14       		.byte	20
+ 18945 0132 14       		.byte	20
+ 18946 0133 14       		.byte	20
+ 18947 0134 14       		.byte	20
+ 18948 0135 14       		.byte	20
+ 18949 0136 41       		.byte	65
+ 18950 0137 22       		.byte	34
+ 18951 0138 14       		.byte	20
+ 18952 0139 08       		.byte	8
+ 18953 013a 00       		.byte	0
+ 18954 013b 02       		.byte	2
+ 18955 013c 01       		.byte	1
+ 18956 013d 51       		.byte	81
+ 18957 013e 09       		.byte	9
+ 18958 013f 06       		.byte	6
+ 18959 0140 32       		.byte	50
+ 18960 0141 49       		.byte	73
+ 18961 0142 79       		.byte	121
+ 18962 0143 41       		.byte	65
+ 18963 0144 3E       		.byte	62
+ 18964 0145 7E       		.byte	126
+ 18965 0146 11       		.byte	17
+ 18966 0147 11       		.byte	17
+ 18967 0148 11       		.byte	17
+ 18968 0149 7E       		.byte	126
+ 18969 014a 7F       		.byte	127
+ 18970 014b 49       		.byte	73
+ 18971 014c 49       		.byte	73
+ 18972 014d 49       		.byte	73
+ 18973 014e 36       		.byte	54
+ 18974 014f 3E       		.byte	62
+ 18975 0150 41       		.byte	65
+ 18976 0151 41       		.byte	65
+ 18977 0152 41       		.byte	65
+ 18978 0153 22       		.byte	34
+ 18979 0154 7F       		.byte	127
+ 18980 0155 41       		.byte	65
+ 18981 0156 41       		.byte	65
+ 18982 0157 22       		.byte	34
+ 18983 0158 1C       		.byte	28
+ 18984 0159 7F       		.byte	127
+ 18985 015a 49       		.byte	73
+ 18986 015b 49       		.byte	73
+ 18987 015c 49       		.byte	73
+ 18988 015d 41       		.byte	65
+ 18989 015e 7F       		.byte	127
+ 18990 015f 09       		.byte	9
+ 18991 0160 09       		.byte	9
+ 18992 0161 01       		.byte	1
+ 18993 0162 01       		.byte	1
+ 18994 0163 3E       		.byte	62
+ 18995 0164 41       		.byte	65
+ 18996 0165 41       		.byte	65
+ 18997 0166 51       		.byte	81
+ 18998 0167 32       		.byte	50
+ 18999 0168 7F       		.byte	127
+ 19000 0169 08       		.byte	8
+ 19001 016a 08       		.byte	8
+ 19002 016b 08       		.byte	8
+ 19003 016c 7F       		.byte	127
+ 19004 016d 00       		.byte	0
+ 19005 016e 41       		.byte	65
+ 19006 016f 7F       		.byte	127
+ 19007 0170 41       		.byte	65
+ 19008 0171 00       		.byte	0
+ 19009 0172 20       		.byte	32
+ 19010 0173 40       		.byte	64
+ 19011 0174 41       		.byte	65
+ 19012 0175 3F       		.byte	63
+ 19013 0176 01       		.byte	1
+ 19014 0177 7F       		.byte	127
+ 19015 0178 08       		.byte	8
+ 19016 0179 14       		.byte	20
+ 19017 017a 22       		.byte	34
+ 19018 017b 41       		.byte	65
+ 19019 017c 7F       		.byte	127
+ 19020 017d 40       		.byte	64
+ 19021 017e 40       		.byte	64
+ 19022 017f 40       		.byte	64
+ 19023 0180 40       		.byte	64
+ 19024 0181 7F       		.byte	127
+ 19025 0182 02       		.byte	2
+ 19026 0183 04       		.byte	4
+ 19027 0184 02       		.byte	2
+ 19028 0185 7F       		.byte	127
+ 19029 0186 7F       		.byte	127
+ 19030 0187 04       		.byte	4
+ 19031 0188 08       		.byte	8
+ 19032 0189 10       		.byte	16
+ 19033 018a 7F       		.byte	127
+ 19034 018b 3E       		.byte	62
+ 19035 018c 41       		.byte	65
+ 19036 018d 41       		.byte	65
+ 19037 018e 41       		.byte	65
+ 19038 018f 3E       		.byte	62
+ 19039 0190 7F       		.byte	127
+ 19040 0191 09       		.byte	9
+ 19041 0192 09       		.byte	9
+ 19042 0193 09       		.byte	9
+ 19043 0194 06       		.byte	6
+ 19044 0195 3E       		.byte	62
+ 19045 0196 41       		.byte	65
+ 19046 0197 51       		.byte	81
+ 19047 0198 21       		.byte	33
+ 19048 0199 5E       		.byte	94
+ 19049 019a 7F       		.byte	127
+ 19050 019b 09       		.byte	9
+ 19051 019c 19       		.byte	25
+ 19052 019d 29       		.byte	41
+ 19053 019e 46       		.byte	70
+ 19054 019f 46       		.byte	70
+ 19055 01a0 49       		.byte	73
+ 19056 01a1 49       		.byte	73
+ 19057 01a2 49       		.byte	73
+ 19058 01a3 31       		.byte	49
+ 19059 01a4 01       		.byte	1
+ 19060 01a5 01       		.byte	1
+ 19061 01a6 7F       		.byte	127
+ 19062 01a7 01       		.byte	1
+ 19063 01a8 01       		.byte	1
+ 19064 01a9 3F       		.byte	63
+ 19065 01aa 40       		.byte	64
+ 19066 01ab 40       		.byte	64
+ 19067 01ac 40       		.byte	64
+ 19068 01ad 3F       		.byte	63
+ 19069 01ae 1F       		.byte	31
+ 19070 01af 20       		.byte	32
+ 19071 01b0 40       		.byte	64
+ 19072 01b1 20       		.byte	32
+ 19073 01b2 1F       		.byte	31
+ 19074 01b3 7F       		.byte	127
+ 19075 01b4 20       		.byte	32
+ 19076 01b5 18       		.byte	24
+ 19077 01b6 20       		.byte	32
+ 19078 01b7 7F       		.byte	127
+ 19079 01b8 63       		.byte	99
+ 19080 01b9 14       		.byte	20
+ 19081 01ba 08       		.byte	8
+ 19082 01bb 14       		.byte	20
+ 19083 01bc 63       		.byte	99
+ 19084 01bd 03       		.byte	3
+ 19085 01be 04       		.byte	4
+ 19086 01bf 78       		.byte	120
+ 19087 01c0 04       		.byte	4
+ 19088 01c1 03       		.byte	3
+ 19089 01c2 61       		.byte	97
+ 19090 01c3 51       		.byte	81
+ 19091 01c4 49       		.byte	73
+ 19092 01c5 45       		.byte	69
+ 19093 01c6 43       		.byte	67
+ 19094 01c7 00       		.byte	0
+ 19095 01c8 00       		.byte	0
+ 19096 01c9 7F       		.byte	127
+ 19097 01ca 41       		.byte	65
+ 19098 01cb 41       		.byte	65
+ 19099 01cc 02       		.byte	2
+ 19100 01cd 04       		.byte	4
+ 19101 01ce 08       		.byte	8
+ 19102 01cf 10       		.byte	16
+ 19103 01d0 20       		.byte	32
+ 19104 01d1 41       		.byte	65
+ 19105 01d2 41       		.byte	65
+ 19106 01d3 7F       		.byte	127
+ 19107 01d4 00       		.byte	0
+ 19108 01d5 00       		.byte	0
+ 19109 01d6 04       		.byte	4
+ 19110 01d7 02       		.byte	2
+ 19111 01d8 01       		.byte	1
+ 19112 01d9 02       		.byte	2
+ 19113 01da 04       		.byte	4
+ 19114 01db 40       		.byte	64
+ 19115 01dc 40       		.byte	64
+ 19116 01dd 40       		.byte	64
+ 19117 01de 40       		.byte	64
+ 19118 01df 40       		.byte	64
+ 19119 01e0 00       		.byte	0
+ 19120 01e1 01       		.byte	1
+ 19121 01e2 02       		.byte	2
+ 19122 01e3 04       		.byte	4
+ 19123 01e4 00       		.byte	0
+ 19124 01e5 20       		.byte	32
+ 19125 01e6 54       		.byte	84
+ 19126 01e7 54       		.byte	84
+ 19127 01e8 54       		.byte	84
+ 19128 01e9 78       		.byte	120
+ 19129 01ea 7F       		.byte	127
+ 19130 01eb 48       		.byte	72
+ 19131 01ec 44       		.byte	68
+ 19132 01ed 44       		.byte	68
+ 19133 01ee 38       		.byte	56
+ 19134 01ef 38       		.byte	56
+ 19135 01f0 44       		.byte	68
+ 19136 01f1 44       		.byte	68
+ 19137 01f2 44       		.byte	68
+ 19138 01f3 20       		.byte	32
+ 19139 01f4 38       		.byte	56
+ 19140 01f5 44       		.byte	68
+ 19141 01f6 44       		.byte	68
+ 19142 01f7 48       		.byte	72
+ 19143 01f8 7F       		.byte	127
+ 19144 01f9 38       		.byte	56
+ 19145 01fa 54       		.byte	84
+ 19146 01fb 54       		.byte	84
+ 19147 01fc 54       		.byte	84
+ 19148 01fd 18       		.byte	24
+ 19149 01fe 08       		.byte	8
+ 19150 01ff 7E       		.byte	126
+ 19151 0200 09       		.byte	9
+ 19152 0201 01       		.byte	1
+ 19153 0202 02       		.byte	2
+ 19154 0203 08       		.byte	8
+ 19155 0204 14       		.byte	20
+ 19156 0205 54       		.byte	84
+ 19157 0206 54       		.byte	84
+ 19158 0207 3C       		.byte	60
+ 19159 0208 7F       		.byte	127
+ 19160 0209 08       		.byte	8
+ 19161 020a 04       		.byte	4
+ 19162 020b 04       		.byte	4
+ 19163 020c 78       		.byte	120
+ 19164 020d 00       		.byte	0
+ 19165 020e 44       		.byte	68
+ 19166 020f 7D       		.byte	125
+ 19167 0210 40       		.byte	64
+ 19168 0211 00       		.byte	0
+ 19169 0212 20       		.byte	32
+ 19170 0213 40       		.byte	64
+ 19171 0214 44       		.byte	68
+ 19172 0215 3D       		.byte	61
+ 19173 0216 00       		.byte	0
+ 19174 0217 00       		.byte	0
+ 19175 0218 7F       		.byte	127
+ 19176 0219 10       		.byte	16
+ 19177 021a 28       		.byte	40
+ 19178 021b 44       		.byte	68
+ 19179 021c 00       		.byte	0
+ 19180 021d 41       		.byte	65
+ 19181 021e 7F       		.byte	127
+ 19182 021f 40       		.byte	64
+ 19183 0220 00       		.byte	0
+ 19184 0221 7C       		.byte	124
+ 19185 0222 04       		.byte	4
+ 19186 0223 18       		.byte	24
+ 19187 0224 04       		.byte	4
+ 19188 0225 78       		.byte	120
+ 19189 0226 7C       		.byte	124
+ 19190 0227 08       		.byte	8
+ 19191 0228 04       		.byte	4
+ 19192 0229 04       		.byte	4
+ 19193 022a 78       		.byte	120
+ 19194 022b 38       		.byte	56
+ 19195 022c 44       		.byte	68
+ 19196 022d 44       		.byte	68
+ 19197 022e 44       		.byte	68
+ 19198 022f 38       		.byte	56
+ 19199 0230 7C       		.byte	124
+ 19200 0231 14       		.byte	20
+ 19201 0232 14       		.byte	20
+ 19202 0233 14       		.byte	20
+ 19203 0234 08       		.byte	8
+ 19204 0235 08       		.byte	8
+ 19205 0236 14       		.byte	20
+ 19206 0237 14       		.byte	20
+ 19207 0238 18       		.byte	24
+ 19208 0239 7C       		.byte	124
+ 19209 023a 7C       		.byte	124
+ 19210 023b 08       		.byte	8
+ 19211 023c 04       		.byte	4
+ 19212 023d 04       		.byte	4
+ 19213 023e 08       		.byte	8
+ 19214 023f 48       		.byte	72
+ 19215 0240 54       		.byte	84
+ 19216 0241 54       		.byte	84
+ 19217 0242 54       		.byte	84
+ 19218 0243 20       		.byte	32
+ 19219 0244 04       		.byte	4
+ 19220 0245 3F       		.byte	63
+ 19221 0246 44       		.byte	68
+ 19222 0247 40       		.byte	64
+ 19223 0248 20       		.byte	32
+ 19224 0249 3C       		.byte	60
+ 19225 024a 40       		.byte	64
+ 19226 024b 40       		.byte	64
+ 19227 024c 20       		.byte	32
+ 19228 024d 7C       		.byte	124
+ 19229 024e 1C       		.byte	28
+ 19230 024f 20       		.byte	32
+ 19231 0250 40       		.byte	64
+ 19232 0251 20       		.byte	32
+ 19233 0252 1C       		.byte	28
+ 19234 0253 3C       		.byte	60
+ 19235 0254 40       		.byte	64
+ 19236 0255 30       		.byte	48
+ 19237 0256 40       		.byte	64
+ 19238 0257 3C       		.byte	60
+ 19239 0258 44       		.byte	68
+ 19240 0259 28       		.byte	40
+ 19241 025a 10       		.byte	16
+ 19242 025b 28       		.byte	40
+ 19243 025c 44       		.byte	68
+ 19244 025d 0C       		.byte	12
+ 19245 025e 50       		.byte	80
+ 19246 025f 50       		.byte	80
+ 19247 0260 50       		.byte	80
+ 19248 0261 3C       		.byte	60
+ 19249 0262 44       		.byte	68
+ 19250 0263 64       		.byte	100
+ 19251 0264 54       		.byte	84
+ 19252 0265 4C       		.byte	76
+ 19253 0266 44       		.byte	68
+ 19254 0267 00       		.byte	0
+ 19255 0268 08       		.byte	8
+ 19256 0269 36       		.byte	54
+ 19257 026a 41       		.byte	65
+ 19258 026b 00       		.byte	0
+ 19259 026c 00       		.byte	0
+ 19260 026d 00       		.byte	0
+ 19261 026e 7F       		.byte	127
+ 19262 026f 00       		.byte	0
+ 19263 0270 00       		.byte	0
+ 19264 0271 00       		.byte	0
+ 19265 0272 41       		.byte	65
+ 19266 0273 36       		.byte	54
+ 19267 0274 08       		.byte	8
+ 19268 0275 00       		.byte	0
+ 19269 0276 04       		.byte	4
+ 19270 0277 02       		.byte	2
+ 19271 0278 04       		.byte	4
+ 19272 0279 08       		.byte	8
+ 19273 027a 04       		.byte	4
+ 19274 027b 7F       		.byte	127
+ 19275 027c 41       		.byte	65
+ 19276 027d 41       		.byte	65
+ 19277 027e 41       		.byte	65
+ 19278 027f 7F       		.byte	127
+ 19279 0280 01       		.byte	1
+ 19280 0281 7F       		.byte	127
+ 19281 0282 09       		.byte	9
+ 19282 0283 44       		.byte	68
+ 19283 0284 38       		.byte	56
+ 19284 0285 44       		.byte	68
+ 19285 0286 7C       		.byte	124
+ 19286 0287 46       		.byte	70
+ 19287 0288 05       		.byte	5
+ 19288 0289 0C       		.byte	12
+ 19289 028a 00       		.byte	0
+ 19290 028b 00       		.byte	0
+ 19291 028c 50       		.byte	80
+ 19292 028d 30       		.byte	48
+ 19293 028e 00       		.byte	0
+ 19294 028f 00       		.byte	0
+ 19295 0290 78       		.byte	120
+ 19296 0291 0A       		.byte	10
+ 19297 0292 09       		.byte	9
+ 19298 0293 00       		.byte	0
+ 19299 0294 50       		.byte	80
+ 19300 0295 30       		.byte	48
+ 19301 0296 00       		.byte	0
+ 19302 0297 50       		.byte	80
+ 19303 0298 30       		.byte	48
+ 19304 0299 40       		.byte	64
+ 19305 029a 00       		.byte	0
+ 19306 029b 40       		.byte	64
+ 19307 029c 00       		.byte	0
+ 19308 029d 40       		.byte	64
+ 19309 029e 02       		.byte	2
+ 19310 029f 02       		.byte	2
+ 19311 02a0 7F       		.byte	127
+ 19312 02a1 02       		.byte	2
+ 19313 02a2 02       		.byte	2
+ 19314 02a3 22       		.byte	34
+ 19315 02a4 22       		.byte	34
+ 19316 02a5 7F       		.byte	127
+ 19317 02a6 22       		.byte	34
+ 19318 02a7 22       		.byte	34
+ 19319 02a8 14       		.byte	20
+ 19320 02a9 3E       		.byte	62
+ 19321 02aa 55       		.byte	85
+ 19322 02ab 41       		.byte	65
+ 19323 02ac 22       		.byte	34
+ 19324 02ad 13       		.byte	19
+ 19325 02ae 08       		.byte	8
+ 19326 02af 64       		.byte	100
+ 19327 02b0 02       		.byte	2
+ 19328 02b1 61       		.byte	97
+ 19329 02b2 7E       		.byte	126
+ 19330 02b3 01       		.byte	1
+ 19331 02b4 7F       		.byte	127
+ 19332 02b5 48       		.byte	72
+ 19333 02b6 30       		.byte	48
+ 19334 02b7 00       		.byte	0
+ 19335 02b8 00       		.byte	0
+ 19336 02b9 06       		.byte	6
+ 19337 02ba 05       		.byte	5
+ 19338 02bb 00       		.byte	0
+ 19339 02bc 7F       		.byte	127
+ 19340 02bd 08       		.byte	8
+ 19341 02be 7F       		.byte	127
+ 19342 02bf 48       		.byte	72
+ 19343 02c0 30       		.byte	48
+ 19344 02c1 7E       		.byte	126
+ 19345 02c2 10       		.byte	16
+ 19346 02c3 12       		.byte	18
+ 19347 02c4 29       		.byte	41
+ 19348 02c5 46       		.byte	70
+ 19349 02c6 01       		.byte	1
+ 19350 02c7 7F       		.byte	127
+ 19351 02c8 11       		.byte	17
+ 19352 02c9 08       		.byte	8
+ 19353 02ca 70       		.byte	112
+ 19354 02cb 3F       		.byte	63
+ 19355 02cc 20       		.byte	32
+ 19356 02cd 60       		.byte	96
+ 19357 02ce 20       		.byte	32
+ 19358 02cf 3F       		.byte	63
+ 19359 02d0 02       		.byte	2
+ 19360 02d1 3F       		.byte	63
+ 19361 02d2 0A       		.byte	10
+ 19362 02d3 48       		.byte	72
+ 19363 02d4 30       		.byte	48
+ 19364 02d5 00       		.byte	0
+ 19365 02d6 00       		.byte	0
+ 19366 02d7 06       		.byte	6
+ 19367 02d8 05       		.byte	5
+ 19368 02d9 00       		.byte	0
+ 19369 02da 00       		.byte	0
+ 19370 02db 05       		.byte	5
+ 19371 02dc 03       		.byte	3
+ 19372 02dd 00       		.byte	0
+ 19373 02de 00       		.byte	0
+ 19374 02df 06       		.byte	6
+ 19375 02e0 05       		.byte	5
+ 19376 02e1 00       		.byte	0
+ 19377 02e2 06       		.byte	6
+ 19378 02e3 05       		.byte	5
+ 19379 02e4 05       		.byte	5
+ 19380 02e5 03       		.byte	3
+ 19381 02e6 00       		.byte	0
+ 19382 02e7 05       		.byte	5
+ 19383 02e8 03       		.byte	3
+ 19384 02e9 1C       		.byte	28
+ 19385 02ea 3E       		.byte	62
+ 19386 02eb 3E       		.byte	62
+ 19387 02ec 3E       		.byte	62
+ 19388 02ed 1C       		.byte	28
+ 19389 02ee 00       		.byte	0
+ 19390 02ef 08       		.byte	8
+ 19391 02f0 08       		.byte	8
+ 19392 02f1 08       		.byte	8
+ 19393 02f2 00       		.byte	0
+ 19394 02f3 08       		.byte	8
+ 19395 02f4 08       		.byte	8
+ 19396 02f5 08       		.byte	8
+ 19397 02f6 08       		.byte	8
+ 19398 02f7 08       		.byte	8
+ 19399 02f8 02       		.byte	2
+ 19400 02f9 01       		.byte	1
+ 19401 02fa 51       		.byte	81
+ 19402 02fb 09       		.byte	9
+ 19403 02fc 06       		.byte	6
+ 19404 02fd 79       		.byte	121
+ 19405 02fe 11       		.byte	17
+ 19406 02ff 27       		.byte	39
+ 19407 0300 11       		.byte	17
+ 19408 0301 79       		.byte	121
+ 19409 0302 78       		.byte	120
+ 19410 0303 04       		.byte	4
+ 19411 0304 7C       		.byte	124
+ 19412 0305 50       		.byte	80
+ 19413 0306 20       		.byte	32
+ 19414 0307 00       		.byte	0
+ 19415 0308 05       		.byte	5
+ 19416 0309 06       		.byte	6
+ 19417 030a 00       		.byte	0
+ 19418 030b 00       		.byte	0
+ 19419 030c 7C       		.byte	124
+ 19420 030d 10       		.byte	16
+ 19421 030e 7C       		.byte	124
+ 19422 030f 50       		.byte	80
+ 19423 0310 20       		.byte	32
+ 19424 0311 7C       		.byte	124
+ 19425 0312 10       		.byte	16
+ 19426 0313 2A       		.byte	42
+ 19427 0314 41       		.byte	65
+ 19428 0315 00       		.byte	0
+ 19429 0316 02       		.byte	2
+ 19430 0317 7F       		.byte	127
+ 19431 0318 12       		.byte	18
+ 19432 0319 08       		.byte	8
+ 19433 031a 70       		.byte	112
+ 19434 031b 3C       		.byte	60
+ 19435 031c 20       		.byte	32
+ 19436 031d 60       		.byte	96
+ 19437 031e 20       		.byte	32
+ 19438 031f 3C       		.byte	60
+ 19439 0320 00       		.byte	0
+ 19440 0321 00       		.byte	0
+ 19441 0322 00       		.byte	0
+ 19442 0323 00       		.byte	0
+ 19443 0324 00       		.byte	0
+ 19444 0325 8C       		.byte	-116
+ 19445 0326 51       		.byte	81
+ 19446 0327 22       		.byte	34
+ 19447 0328 11       		.byte	17
+ 19448 0329 0C       		.byte	12
+ 19449 032a 88       		.byte	-120
+ 19450 032b 52       		.byte	82
+ 19451 032c 24       		.byte	36
+ 19452 032d 12       		.byte	18
+ 19453 032e 08       		.byte	8
+ 19454 032f 30       		.byte	48
+ 19455 0330 70       		.byte	112
+ 19456 0331 41       		.byte	65
+ 19457 0332 3F       		.byte	63
+ 19458 0333 01       		.byte	1
+ 19459 0334 24       		.byte	36
+ 19460 0335 18       		.byte	24
+ 19461 0336 24       		.byte	36
+ 19462 0337 18       		.byte	24
+ 19463 0338 24       		.byte	36
+ 19464 0339 42       		.byte	66
+ 19465 033a 7E       		.byte	126
+ 19466 033b 42       		.byte	66
+ 19467 033c 02       		.byte	2
+ 19468 033d 03       		.byte	3
+ 19469 033e 00       		.byte	0
+ 19470 033f 00       		.byte	0
+ 19471 0340 77       		.byte	119
+ 19472 0341 00       		.byte	0
+ 19473 0342 00       		.byte	0
+ 19474 0343 00       		.byte	0
+ 19475 0344 4A       		.byte	74
+ 19476 0345 55       		.byte	85
+ 19477 0346 29       		.byte	41
+ 19478 0347 00       		.byte	0
+ 19479 0348 7E       		.byte	126
+ 19480 0349 4B       		.byte	75
+ 19481 034a 4A       		.byte	74
+ 19482 034b 4B       		.byte	75
+ 19483 034c 42       		.byte	66
+ 19484 034d 7E       		.byte	126
+ 19485 034e 99       		.byte	-103
+ 19486 034f A5       		.byte	-91
+ 19487 0350 A5       		.byte	-91
+ 19488 0351 7E       		.byte	126
+ 19489 0352 3E       		.byte	62
+ 19490 0353 45       		.byte	69
+ 19491 0354 45       		.byte	69
+ 19492 0355 41       		.byte	65
+ 19493 0356 32       		.byte	50
+ 19494 0357 08       		.byte	8
+ 19495 0358 14       		.byte	20
+ 19496 0359 22       		.byte	34
+ 19497 035a 08       		.byte	8
+ 19498 035b 14       		.byte	20
+ 19499 035c 08       		.byte	8
+ 19500 035d 08       		.byte	8
+ 19501 035e 08       		.byte	8
+ 19502 035f 08       		.byte	8
+ 19503 0360 18       		.byte	24
+ 19504 0361 08       		.byte	8
+ 19505 0362 08       		.byte	8
+ 19506 0363 08       		.byte	8
+ 19507 0364 08       		.byte	8
+ 19508 0365 08       		.byte	8
+ 19509 0366 7E       		.byte	126
+ 19510 0367 BD       		.byte	-67
+ 19511 0368 95       		.byte	-107
+ 19512 0369 A9       		.byte	-87
+ 19513 036a 7E       		.byte	126
+ 19514 036b 42       		.byte	66
+ 19515 036c 43       		.byte	67
+ 19516 036d 7E       		.byte	126
+ 19517 036e 43       		.byte	67
+ 19518 036f 42       		.byte	66
+ 19519 0370 00       		.byte	0
+ 19520 0371 07       		.byte	7
+ 19521 0372 05       		.byte	5
+ 19522 0373 07       		.byte	7
+ 19523 0374 00       		.byte	0
+ 19524 0375 00       		.byte	0
+ 19525 0376 24       		.byte	36
+ 19526 0377 2E       		.byte	46
+ 19527 0378 24       		.byte	36
+ 19528 0379 00       		.byte	0
+ 19529 037a 00       		.byte	0
+ 19530 037b 41       		.byte	65
+ 19531 037c 7F       		.byte	127
+ 19532 037d 41       		.byte	65
+ 19533 037e 00       		.byte	0
+ 19534 037f 00       		.byte	0
+ 19535 0380 44       		.byte	68
+ 19536 0381 7D       		.byte	125
+ 19537 0382 40       		.byte	64
+ 19538 0383 00       		.byte	0
+ 19539 0384 08       		.byte	8
+ 19540 0385 78       		.byte	120
+ 19541 0386 08       		.byte	8
+ 19542 0387 0C       		.byte	12
+ 19543 0388 00       		.byte	0
+ 19544 0389 7C       		.byte	124
+ 19545 038a 08       		.byte	8
+ 19546 038b 10       		.byte	16
+ 19547 038c 08       		.byte	8
+ 19548 038d 1C       		.byte	28
+ 19549 038e 06       		.byte	6
+ 19550 038f 09       		.byte	9
+ 19551 0390 7F       		.byte	127
+ 19552 0391 01       		.byte	1
+ 19553 0392 7F       		.byte	127
+ 19554 0393 00       		.byte	0
+ 19555 0394 00       		.byte	0
+ 19556 0395 08       		.byte	8
+ 19557 0396 00       		.byte	0
+ 19558 0397 00       		.byte	0
+ 19559 0398 38       		.byte	56
+ 19560 0399 55       		.byte	85
+ 19561 039a 54       		.byte	84
+ 19562 039b 55       		.byte	85
+ 19563 039c 18       		.byte	24
+ 19564 039d 7C       		.byte	124
+ 19565 039e 10       		.byte	16
+ 19566 039f 20       		.byte	32
+ 19567 03a0 7B       		.byte	123
+ 19568 03a1 03       		.byte	3
+ 19569 03a2 38       		.byte	56
+ 19570 03a3 54       		.byte	84
+ 19571 03a4 54       		.byte	84
+ 19572 03a5 44       		.byte	68
+ 19573 03a6 20       		.byte	32
+ 19574 03a7 14       		.byte	20
+ 19575 03a8 08       		.byte	8
+ 19576 03a9 22       		.byte	34
+ 19577 03aa 14       		.byte	20
+ 19578 03ab 08       		.byte	8
+ 19579 03ac 20       		.byte	32
+ 19580 03ad 44       		.byte	68
+ 19581 03ae 3C       		.byte	60
+ 19582 03af 02       		.byte	2
+ 19583 03b0 00       		.byte	0
+ 19584 03b1 46       		.byte	70
+ 19585 03b2 49       		.byte	73
+ 19586 03b3 49       		.byte	73
+ 19587 03b4 49       		.byte	73
+ 19588 03b5 31       		.byte	49
+ 19589 03b6 48       		.byte	72
+ 19590 03b7 54       		.byte	84
+ 19591 03b8 54       		.byte	84
+ 19592 03b9 54       		.byte	84
+ 19593 03ba 20       		.byte	32
+ 19594 03bb 00       		.byte	0
+ 19595 03bc 45       		.byte	69
+ 19596 03bd 7C       		.byte	124
+ 19597 03be 41       		.byte	65
+ 19598 03bf 00       		.byte	0
+ 19599 03c0 7E       		.byte	126
+ 19600 03c1 11       		.byte	17
+ 19601 03c2 11       		.byte	17
+ 19602 03c3 11       		.byte	17
+ 19603 03c4 7E       		.byte	126
+ 19604 03c5 7F       		.byte	127
+ 19605 03c6 49       		.byte	73
+ 19606 03c7 49       		.byte	73
+ 19607 03c8 49       		.byte	73
+ 19608 03c9 30       		.byte	48
+ 19609 03ca 7F       		.byte	127
+ 19610 03cb 49       		.byte	73
+ 19611 03cc 49       		.byte	73
+ 19612 03cd 49       		.byte	73
+ 19613 03ce 36       		.byte	54
+ 19614 03cf 7F       		.byte	127
+ 19615 03d0 01       		.byte	1
+ 19616 03d1 01       		.byte	1
+ 19617 03d2 01       		.byte	1
+ 19618 03d3 01       		.byte	1
+ 19619 03d4 60       		.byte	96
+ 19620 03d5 3E       		.byte	62
+ 19621 03d6 21       		.byte	33
+ 19622 03d7 3F       		.byte	63
+ 19623 03d8 60       		.byte	96
+ 19624 03d9 7F       		.byte	127
+ 19625 03da 49       		.byte	73
+ 19626 03db 49       		.byte	73
+ 19627 03dc 49       		.byte	73
+ 19628 03dd 41       		.byte	65
+ 19629 03de 67       		.byte	103
+ 19630 03df 18       		.byte	24
+ 19631 03e0 7F       		.byte	127
+ 19632 03e1 18       		.byte	24
+ 19633 03e2 67       		.byte	103
+ 19634 03e3 22       		.byte	34
+ 19635 03e4 41       		.byte	65
+ 19636 03e5 49       		.byte	73
+ 19637 03e6 49       		.byte	73
+ 19638 03e7 36       		.byte	54
+ 19639 03e8 7F       		.byte	127
+ 19640 03e9 10       		.byte	16
+ 19641 03ea 08       		.byte	8
+ 19642 03eb 04       		.byte	4
+ 19643 03ec 7F       		.byte	127
+ 19644 03ed 7F       		.byte	127
+ 19645 03ee 10       		.byte	16
+ 19646 03ef 09       		.byte	9
+ 19647 03f0 04       		.byte	4
+ 19648 03f1 7F       		.byte	127
+ 19649 03f2 7F       		.byte	127
+ 19650 03f3 08       		.byte	8
+ 19651 03f4 14       		.byte	20
+ 19652 03f5 22       		.byte	34
+ 19653 03f6 41       		.byte	65
+ 19654 03f7 40       		.byte	64
+ 19655 03f8 3E       		.byte	62
+ 19656 03f9 01       		.byte	1
+ 19657 03fa 01       		.byte	1
+ 19658 03fb 7E       		.byte	126
+ 19659 03fc 7F       		.byte	127
+ 19660 03fd 02       		.byte	2
+ 19661 03fe 04       		.byte	4
+ 19662 03ff 02       		.byte	2
+ 19663 0400 7F       		.byte	127
+ 19664 0401 7F       		.byte	127
+ 19665 0402 08       		.byte	8
+ 19666 0403 08       		.byte	8
+ 19667 0404 08       		.byte	8
+ 19668 0405 7F       		.byte	127
+ 19669 0406 3E       		.byte	62
+ 19670 0407 41       		.byte	65
+ 19671 0408 41       		.byte	65
+ 19672 0409 41       		.byte	65
+ 19673 040a 3E       		.byte	62
+ 19674 040b 7F       		.byte	127
+ 19675 040c 01       		.byte	1
+ 19676 040d 01       		.byte	1
+ 19677 040e 01       		.byte	1
+ 19678 040f 7F       		.byte	127
+ 19679 0410 7F       		.byte	127
+ 19680 0411 09       		.byte	9
+ 19681 0412 09       		.byte	9
+ 19682 0413 09       		.byte	9
+ 19683 0414 06       		.byte	6
+ 19684 0415 3E       		.byte	62
+ 19685 0416 41       		.byte	65
+ 19686 0417 41       		.byte	65
+ 19687 0418 41       		.byte	65
+ 19688 0419 22       		.byte	34
+ 19689 041a 01       		.byte	1
+ 19690 041b 01       		.byte	1
+ 19691 041c 7F       		.byte	127
+ 19692 041d 01       		.byte	1
+ 19693 041e 01       		.byte	1
+ 19694 041f 27       		.byte	39
+ 19695 0420 48       		.byte	72
+ 19696 0421 48       		.byte	72
+ 19697 0422 48       		.byte	72
+ 19698 0423 3F       		.byte	63
+ 19699 0424 1E       		.byte	30
+ 19700 0425 21       		.byte	33
+ 19701 0426 7F       		.byte	127
+ 19702 0427 21       		.byte	33
+ 19703 0428 1E       		.byte	30
+ 19704 0429 63       		.byte	99
+ 19705 042a 14       		.byte	20
+ 19706 042b 08       		.byte	8
+ 19707 042c 14       		.byte	20
+ 19708 042d 63       		.byte	99
+ 19709 042e 3F       		.byte	63
+ 19710 042f 20       		.byte	32
+ 19711 0430 20       		.byte	32
+ 19712 0431 3F       		.byte	63
+ 19713 0432 40       		.byte	64
+ 19714 0433 1F       		.byte	31
+ 19715 0434 10       		.byte	16
+ 19716 0435 10       		.byte	16
+ 19717 0436 10       		.byte	16
+ 19718 0437 7F       		.byte	127
+ 19719 0438 7F       		.byte	127
+ 19720 0439 40       		.byte	64
+ 19721 043a 7F       		.byte	127
+ 19722 043b 40       		.byte	64
+ 19723 043c 7F       		.byte	127
+ 19724 043d 3F       		.byte	63
+ 19725 043e 20       		.byte	32
+ 19726 043f 3F       		.byte	63
+ 19727 0440 20       		.byte	32
+ 19728 0441 7F       		.byte	127
+ 19729 0442 01       		.byte	1
+ 19730 0443 7F       		.byte	127
+ 19731 0444 44       		.byte	68
+ 19732 0445 44       		.byte	68
+ 19733 0446 38       		.byte	56
+ 19734 0447 7F       		.byte	127
+ 19735 0448 44       		.byte	68
+ 19736 0449 7C       		.byte	124
+ 19737 044a 00       		.byte	0
+ 19738 044b 7F       		.byte	127
+ 19739 044c 7F       		.byte	127
+ 19740 044d 44       		.byte	68
+ 19741 044e 44       		.byte	68
+ 19742 044f 44       		.byte	68
+ 19743 0450 38       		.byte	56
+ 19744 0451 22       		.byte	34
+ 19745 0452 41       		.byte	65
+ 19746 0453 49       		.byte	73
+ 19747 0454 49       		.byte	73
+ 19748 0455 3E       		.byte	62
+ 19749 0456 7F       		.byte	127
+ 19750 0457 08       		.byte	8
+ 19751 0458 7F       		.byte	127
+ 19752 0459 41       		.byte	65
+ 19753 045a 7F       		.byte	127
+ 19754 045b 46       		.byte	70
+ 19755 045c 29       		.byte	41
+ 19756 045d 19       		.byte	25
+ 19757 045e 09       		.byte	9
+ 19758 045f 7F       		.byte	127
+ 19759 0460 20       		.byte	32
+ 19760 0461 54       		.byte	84
+ 19761 0462 54       		.byte	84
+ 19762 0463 54       		.byte	84
+ 19763 0464 78       		.byte	120
+ 19764 0465 3C       		.byte	60
+ 19765 0466 4A       		.byte	74
+ 19766 0467 4A       		.byte	74
+ 19767 0468 4B       		.byte	75
+ 19768 0469 30       		.byte	48
+ 19769 046a 7C       		.byte	124
+ 19770 046b 54       		.byte	84
+ 19771 046c 54       		.byte	84
+ 19772 046d 58       		.byte	88
+ 19773 046e 20       		.byte	32
+ 19774 046f 7C       		.byte	124
+ 19775 0470 04       		.byte	4
+ 19776 0471 04       		.byte	4
+ 19777 0472 04       		.byte	4
+ 19778 0473 04       		.byte	4
+ 19779 0474 60       		.byte	96
+ 19780 0475 38       		.byte	56
+ 19781 0476 24       		.byte	36
+ 19782 0477 3C       		.byte	60
+ 19783 0478 60       		.byte	96
+ 19784 0479 38       		.byte	56
+ 19785 047a 54       		.byte	84
+ 19786 047b 54       		.byte	84
+ 19787 047c 54       		.byte	84
+ 19788 047d 18       		.byte	24
+ 19789 047e 74       		.byte	116
+ 19790 047f 08       		.byte	8
+ 19791 0480 7C       		.byte	124
+ 19792 0481 08       		.byte	8
+ 19793 0482 74       		.byte	116
+ 19794 0483 28       		.byte	40
+ 19795 0484 44       		.byte	68
+ 19796 0485 54       		.byte	84
+ 19797 0486 54       		.byte	84
+ 19798 0487 28       		.byte	40
+ 19799 0488 7C       		.byte	124
+ 19800 0489 20       		.byte	32
+ 19801 048a 10       		.byte	16
+ 19802 048b 08       		.byte	8
+ 19803 048c 7C       		.byte	124
+ 19804 048d 7C       		.byte	124
+ 19805 048e 21       		.byte	33
+ 19806 048f 12       		.byte	18
+ 19807 0490 09       		.byte	9
+ 19808 0491 7C       		.byte	124
+ 19809 0492 7C       		.byte	124
+ 19810 0493 10       		.byte	16
+ 19811 0494 10       		.byte	16
+ 19812 0495 28       		.byte	40
+ 19813 0496 44       		.byte	68
+ 19814 0497 40       		.byte	64
+ 19815 0498 78       		.byte	120
+ 19816 0499 04       		.byte	4
+ 19817 049a 04       		.byte	4
+ 19818 049b 7C       		.byte	124
+ 19819 049c 7C       		.byte	124
+ 19820 049d 08       		.byte	8
+ 19821 049e 10       		.byte	16
+ 19822 049f 08       		.byte	8
+ 19823 04a0 7C       		.byte	124
+ 19824 04a1 7C       		.byte	124
+ 19825 04a2 10       		.byte	16
+ 19826 04a3 10       		.byte	16
+ 19827 04a4 10       		.byte	16
+ 19828 04a5 7C       		.byte	124
+ 19829 04a6 38       		.byte	56
+ 19830 04a7 44       		.byte	68
+ 19831 04a8 44       		.byte	68
+ 19832 04a9 44       		.byte	68
+ 19833 04aa 38       		.byte	56
+ 19834 04ab 7C       		.byte	124
+ 19835 04ac 04       		.byte	4
+ 19836 04ad 04       		.byte	4
+ 19837 04ae 04       		.byte	4
+ 19838 04af 7C       		.byte	124
+ 19839 04b0 7C       		.byte	124
+ 19840 04b1 14       		.byte	20
+ 19841 04b2 14       		.byte	20
+ 19842 04b3 14       		.byte	20
+ 19843 04b4 08       		.byte	8
+ 19844 04b5 38       		.byte	56
+ 19845 04b6 44       		.byte	68
+ 19846 04b7 44       		.byte	68
+ 19847 04b8 44       		.byte	68
+ 19848 04b9 28       		.byte	40
+ 19849 04ba 04       		.byte	4
+ 19850 04bb 04       		.byte	4
+ 19851 04bc 7C       		.byte	124
+ 19852 04bd 04       		.byte	4
+ 19853 04be 04       		.byte	4
+ 19854 04bf 0C       		.byte	12
+ 19855 04c0 50       		.byte	80
+ 19856 04c1 50       		.byte	80
+ 19857 04c2 50       		.byte	80
+ 19858 04c3 3C       		.byte	60
+ 19859 04c4 18       		.byte	24
+ 19860 04c5 24       		.byte	36
+ 19861 04c6 7C       		.byte	124
+ 19862 04c7 24       		.byte	36
+ 19863 04c8 18       		.byte	24
+ 19864 04c9 44       		.byte	68
+ 19865 04ca 28       		.byte	40
+ 19866 04cb 10       		.byte	16
+ 19867 04cc 28       		.byte	40
+ 19868 04cd 44       		.byte	68
+ 19869 04ce 3C       		.byte	60
+ 19870 04cf 20       		.byte	32
+ 19871 04d0 20       		.byte	32
+ 19872 04d1 3C       		.byte	60
+ 19873 04d2 40       		.byte	64
+ 19874 04d3 1C       		.byte	28
+ 19875 04d4 20       		.byte	32
+ 19876 04d5 20       		.byte	32
+ 19877 04d6 20       		.byte	32
+ 19878 04d7 7C       		.byte	124
+ 19879 04d8 7C       		.byte	124
+ 19880 04d9 40       		.byte	64
+ 19881 04da 7C       		.byte	124
+ 19882 04db 40       		.byte	64
+ 19883 04dc 7C       		.byte	124
+ 19884 04dd 3C       		.byte	60
+ 19885 04de 20       		.byte	32
+ 19886 04df 3C       		.byte	60
+ 19887 04e0 20       		.byte	32
+ 19888 04e1 7C       		.byte	124
+ 19889 04e2 04       		.byte	4
+ 19890 04e3 7C       		.byte	124
+ 19891 04e4 48       		.byte	72
+ 19892 04e5 48       		.byte	72
+ 19893 04e6 30       		.byte	48
+ 19894 04e7 7C       		.byte	124
+ 19895 04e8 48       		.byte	72
+ 19896 04e9 48       		.byte	72
+ 19897 04ea 30       		.byte	48
+ 19898 04eb 7C       		.byte	124
+ 19899 04ec 7C       		.byte	124
+ 19900 04ed 48       		.byte	72
+ 19901 04ee 48       		.byte	72
+ 19902 04ef 48       		.byte	72
+ 19903 04f0 30       		.byte	48
+ 19904 04f1 28       		.byte	40
+ 19905 04f2 44       		.byte	68
+ 19906 04f3 54       		.byte	84
+ 19907 04f4 54       		.byte	84
+ 19908 04f5 38       		.byte	56
+ 19909 04f6 7C       		.byte	124
+ 19910 04f7 38       		.byte	56
+ 19911 04f8 44       		.byte	68
+ 19912 04f9 44       		.byte	68
+ 19913 04fa 38       		.byte	56
+ 19914 04fb 48       		.byte	72
+ 19915 04fc 34       		.byte	52
+ 19916 04fd 14       		.byte	20
+ 19917 04fe 14       		.byte	20
+ 19918 04ff 7C       		.byte	124
+ 19919              		.section	.rodata.fnt_libera_24x14_bits,"a",%progbits
+ 19920              		.set	.LANCHOR1,. + 0
+ 19923              	fnt_libera_24x14_bits:
+ 19924 0000 00       		.byte	0
+ 19925 0001 00       		.byte	0
+ 19926 0002 00       		.byte	0
+ 19927 0003 00       		.byte	0
+ 19928 0004 FE       		.byte	-2
+ 19929 0005 01       		.byte	1
+ 19930 0006 80       		.byte	-128
+ 19931 0007 FF       		.byte	-1
+ 19932 0008 07       		.byte	7
+ 19933 0009 C0       		.byte	-64
+ 19934 000a FF       		.byte	-1
+ 19935 000b 0F       		.byte	15
+ 19936 000c E0       		.byte	-32
+ 19937 000d 01       		.byte	1
+ 19938 000e 1E       		.byte	30
+ 19939 000f 60       		.byte	96
+ 19940 0010 00       		.byte	0
+ 19941 0011 18       		.byte	24
+ 19942 0012 60       		.byte	96
+ 19943 0013 00       		.byte	0
+ 19944 0014 18       		.byte	24
+ 19945 0015 60       		.byte	96
+ 19946 0016 00       		.byte	0
+ 19947 0017 18       		.byte	24
+ 19948 0018 E0       		.byte	-32
+ 19949 0019 01       		.byte	1
+ 19950 001a 1E       		.byte	30
+ 19951 001b C0       		.byte	-64
+ 19952 001c FF       		.byte	-1
+ 19953 001d 0F       		.byte	15
+ 19954 001e 80       		.byte	-128
+ 19955 001f FF       		.byte	-1
+ 19956 0020 07       		.byte	7
+ 19957 0021 00       		.byte	0
+ 19958 0022 FE       		.byte	-2
+ 19959 0023 01       		.byte	1
+ 19960 0024 00       		.byte	0
+ 19961 0025 00       		.byte	0
+ 19962 0026 00       		.byte	0
+ 19963 0027 00       		.byte	0
+ 19964 0028 00       		.byte	0
+ 19965 0029 00       		.byte	0
+ 19966 002a 00       		.byte	0
+ 19967 002b 00       		.byte	0
+ 19968 002c 00       		.byte	0
+ 19969 002d 00       		.byte	0
+ 19970 002e 00       		.byte	0
+ 19971 002f 00       		.byte	0
+ 19972 0030 00       		.byte	0
+ 19973 0031 03       		.byte	3
+ 19974 0032 00       		.byte	0
+ 19975 0033 00       		.byte	0
+ 19976 0034 03       		.byte	3
+ 19977 0035 18       		.byte	24
+ 19978 0036 80       		.byte	-128
+ 19979 0037 03       		.byte	3
+ 19980 0038 18       		.byte	24
+ 19981 0039 80       		.byte	-128
+ 19982 003a 01       		.byte	1
+ 19983 003b 18       		.byte	24
+ 19984 003c C0       		.byte	-64
+ 19985 003d 01       		.byte	1
+ 19986 003e 18       		.byte	24
+ 19987 003f E0       		.byte	-32
+ 19988 0040 FF       		.byte	-1
+ 19989 0041 1F       		.byte	31
+ 19990 0042 E0       		.byte	-32
+ 19991 0043 FF       		.byte	-1
+ 19992 0044 1F       		.byte	31
+ 19993 0045 E0       		.byte	-32
+ 19994 0046 FF       		.byte	-1
+ 19995 0047 1F       		.byte	31
+ 19996 0048 00       		.byte	0
+ 19997 0049 00       		.byte	0
+ 19998 004a 18       		.byte	24
+ 19999 004b 00       		.byte	0
+ 20000 004c 00       		.byte	0
+ 20001 004d 18       		.byte	24
+ 20002 004e 00       		.byte	0
+ 20003 004f 00       		.byte	0
+ 20004 0050 18       		.byte	24
+ 20005 0051 00       		.byte	0
+ 20006 0052 00       		.byte	0
+ 20007 0053 00       		.byte	0
+ 20008 0054 00       		.byte	0
+ 20009 0055 00       		.byte	0
+ 20010 0056 00       		.byte	0
+ 20011 0057 00       		.byte	0
+ 20012 0058 01       		.byte	1
+ 20013 0059 1C       		.byte	28
+ 20014 005a C0       		.byte	-64
+ 20015 005b 01       		.byte	1
+ 20016 005c 1E       		.byte	30
+ 20017 005d C0       		.byte	-64
+ 20018 005e 01       		.byte	1
+ 20019 005f 1F       		.byte	31
+ 20020 0060 E0       		.byte	-32
+ 20021 0061 81       		.byte	-127
+ 20022 0062 1F       		.byte	31
+ 20023 0063 60       		.byte	96
+ 20024 0064 C0       		.byte	-64
+ 20025 0065 1B       		.byte	27
+ 20026 0066 60       		.byte	96
+ 20027 0067 E0       		.byte	-32
+ 20028 0068 19       		.byte	25
+ 20029 0069 60       		.byte	96
+ 20030 006a F0       		.byte	-16
+ 20031 006b 18       		.byte	24
+ 20032 006c E0       		.byte	-32
+ 20033 006d 7C       		.byte	124
+ 20034 006e 18       		.byte	24
+ 20035 006f C0       		.byte	-64
+ 20036 0070 3F       		.byte	63
+ 20037 0071 18       		.byte	24
+ 20038 0072 C0       		.byte	-64
+ 20039 0073 1F       		.byte	31
+ 20040 0074 18       		.byte	24
+ 20041 0075 80       		.byte	-128
+ 20042 0076 0F       		.byte	15
+ 20043 0077 18       		.byte	24
+ 20044 0078 00       		.byte	0
+ 20045 0079 00       		.byte	0
+ 20046 007a 00       		.byte	0
+ 20047 007b 00       		.byte	0
+ 20048 007c 00       		.byte	0
+ 20049 007d 00       		.byte	0
+ 20050 007e 00       		.byte	0
+ 20051 007f 00       		.byte	0
+ 20052 0080 00       		.byte	0
+ 20053 0081 00       		.byte	0
+ 20054 0082 01       		.byte	1
+ 20055 0083 06       		.byte	6
+ 20056 0084 C0       		.byte	-64
+ 20057 0085 01       		.byte	1
+ 20058 0086 0E       		.byte	14
+ 20059 0087 C0       		.byte	-64
+ 20060 0088 01       		.byte	1
+ 20061 0089 0E       		.byte	14
+ 20062 008a E0       		.byte	-32
+ 20063 008b 00       		.byte	0
+ 20064 008c 1C       		.byte	28
+ 20065 008d 60       		.byte	96
+ 20066 008e 30       		.byte	48
+ 20067 008f 18       		.byte	24
+ 20068 0090 60       		.byte	96
+ 20069 0091 30       		.byte	48
+ 20070 0092 18       		.byte	24
+ 20071 0093 60       		.byte	96
+ 20072 0094 30       		.byte	48
+ 20073 0095 18       		.byte	24
+ 20074 0096 E0       		.byte	-32
+ 20075 0097 38       		.byte	56
+ 20076 0098 18       		.byte	24
+ 20077 0099 C0       		.byte	-64
+ 20078 009a 7F       		.byte	127
+ 20079 009b 1C       		.byte	28
+ 20080 009c C0       		.byte	-64
+ 20081 009d EF       		.byte	-17
+ 20082 009e 0F       		.byte	15
+ 20083 009f 80       		.byte	-128
+ 20084 00a0 C7       		.byte	-57
+ 20085 00a1 0F       		.byte	15
+ 20086 00a2 00       		.byte	0
+ 20087 00a3 80       		.byte	-128
+ 20088 00a4 07       		.byte	7
+ 20089 00a5 00       		.byte	0
+ 20090 00a6 00       		.byte	0
+ 20091 00a7 00       		.byte	0
+ 20092 00a8 00       		.byte	0
+ 20093 00a9 00       		.byte	0
+ 20094 00aa 00       		.byte	0
+ 20095 00ab 00       		.byte	0
+ 20096 00ac C0       		.byte	-64
+ 20097 00ad 01       		.byte	1
+ 20098 00ae 00       		.byte	0
+ 20099 00af E0       		.byte	-32
+ 20100 00b0 01       		.byte	1
+ 20101 00b1 00       		.byte	0
+ 20102 00b2 F0       		.byte	-16
+ 20103 00b3 01       		.byte	1
+ 20104 00b4 00       		.byte	0
+ 20105 00b5 BC       		.byte	-68
+ 20106 00b6 01       		.byte	1
+ 20107 00b7 00       		.byte	0
+ 20108 00b8 9E       		.byte	-98
+ 20109 00b9 01       		.byte	1
+ 20110 00ba 00       		.byte	0
+ 20111 00bb 8F       		.byte	-113
+ 20112 00bc 01       		.byte	1
+ 20113 00bd C0       		.byte	-64
+ 20114 00be 83       		.byte	-125
+ 20115 00bf 01       		.byte	1
+ 20116 00c0 E0       		.byte	-32
+ 20117 00c1 81       		.byte	-127
+ 20118 00c2 01       		.byte	1
+ 20119 00c3 E0       		.byte	-32
+ 20120 00c4 FF       		.byte	-1
+ 20121 00c5 1F       		.byte	31
+ 20122 00c6 E0       		.byte	-32
+ 20123 00c7 FF       		.byte	-1
+ 20124 00c8 1F       		.byte	31
+ 20125 00c9 E0       		.byte	-32
+ 20126 00ca FF       		.byte	-1
+ 20127 00cb 1F       		.byte	31
+ 20128 00cc 00       		.byte	0
+ 20129 00cd 80       		.byte	-128
+ 20130 00ce 01       		.byte	1
+ 20131 00cf 00       		.byte	0
+ 20132 00d0 80       		.byte	-128
+ 20133 00d1 01       		.byte	1
+ 20134 00d2 00       		.byte	0
+ 20135 00d3 00       		.byte	0
+ 20136 00d4 00       		.byte	0
+ 20137 00d5 00       		.byte	0
+ 20138 00d6 00       		.byte	0
+ 20139 00d7 02       		.byte	2
+ 20140 00d8 E0       		.byte	-32
+ 20141 00d9 1F       		.byte	31
+ 20142 00da 06       		.byte	6
+ 20143 00db E0       		.byte	-32
+ 20144 00dc 1F       		.byte	31
+ 20145 00dd 0E       		.byte	14
+ 20146 00de E0       		.byte	-32
+ 20147 00df 1F       		.byte	31
+ 20148 00e0 1E       		.byte	30
+ 20149 00e1 60       		.byte	96
+ 20150 00e2 18       		.byte	24
+ 20151 00e3 1C       		.byte	28
+ 20152 00e4 60       		.byte	96
+ 20153 00e5 0C       		.byte	12
+ 20154 00e6 18       		.byte	24
+ 20155 00e7 60       		.byte	96
+ 20156 00e8 0C       		.byte	12
+ 20157 00e9 18       		.byte	24
+ 20158 00ea 60       		.byte	96
+ 20159 00eb 0C       		.byte	12
+ 20160 00ec 18       		.byte	24
+ 20161 00ed 60       		.byte	96
+ 20162 00ee 1C       		.byte	28
+ 20163 00ef 1C       		.byte	28
+ 20164 00f0 60       		.byte	96
+ 20165 00f1 F8       		.byte	-8
+ 20166 00f2 0F       		.byte	15
+ 20167 00f3 60       		.byte	96
+ 20168 00f4 F8       		.byte	-8
+ 20169 00f5 07       		.byte	7
+ 20170 00f6 00       		.byte	0
+ 20171 00f7 E0       		.byte	-32
+ 20172 00f8 03       		.byte	3
+ 20173 00f9 00       		.byte	0
+ 20174 00fa 00       		.byte	0
+ 20175 00fb 00       		.byte	0
+ 20176 00fc 00       		.byte	0
+ 20177 00fd 00       		.byte	0
+ 20178 00fe 00       		.byte	0
+ 20179 00ff 00       		.byte	0
+ 20180 0100 FE       		.byte	-2
+ 20181 0101 01       		.byte	1
+ 20182 0102 80       		.byte	-128
+ 20183 0103 FF       		.byte	-1
+ 20184 0104 07       		.byte	7
+ 20185 0105 C0       		.byte	-64
+ 20186 0106 FF       		.byte	-1
+ 20187 0107 0F       		.byte	15
+ 20188 0108 E0       		.byte	-32
+ 20189 0109 31       		.byte	49
+ 20190 010a 1C       		.byte	28
+ 20191 010b 60       		.byte	96
+ 20192 010c 18       		.byte	24
+ 20193 010d 18       		.byte	24
+ 20194 010e 60       		.byte	96
+ 20195 010f 18       		.byte	24
+ 20196 0110 18       		.byte	24
+ 20197 0111 60       		.byte	96
+ 20198 0112 18       		.byte	24
+ 20199 0113 18       		.byte	24
+ 20200 0114 E0       		.byte	-32
+ 20201 0115 38       		.byte	56
+ 20202 0116 1C       		.byte	28
+ 20203 0117 C0       		.byte	-64
+ 20204 0118 F9       		.byte	-7
+ 20205 0119 0F       		.byte	15
+ 20206 011a 80       		.byte	-128
+ 20207 011b F1       		.byte	-15
+ 20208 011c 0F       		.byte	15
+ 20209 011d 00       		.byte	0
+ 20210 011e E1       		.byte	-31
+ 20211 011f 03       		.byte	3
+ 20212 0120 00       		.byte	0
+ 20213 0121 00       		.byte	0
+ 20214 0122 00       		.byte	0
+ 20215 0123 00       		.byte	0
+ 20216 0124 00       		.byte	0
+ 20217 0125 00       		.byte	0
+ 20218 0126 00       		.byte	0
+ 20219 0127 00       		.byte	0
+ 20220 0128 00       		.byte	0
+ 20221 0129 00       		.byte	0
+ 20222 012a 00       		.byte	0
+ 20223 012b 00       		.byte	0
+ 20224 012c 60       		.byte	96
+ 20225 012d 00       		.byte	0
+ 20226 012e 00       		.byte	0
+ 20227 012f 60       		.byte	96
+ 20228 0130 00       		.byte	0
+ 20229 0131 00       		.byte	0
+ 20230 0132 60       		.byte	96
+ 20231 0133 00       		.byte	0
+ 20232 0134 00       		.byte	0
+ 20233 0135 60       		.byte	96
+ 20234 0136 00       		.byte	0
+ 20235 0137 1E       		.byte	30
+ 20236 0138 60       		.byte	96
+ 20237 0139 C0       		.byte	-64
+ 20238 013a 1F       		.byte	31
+ 20239 013b 60       		.byte	96
+ 20240 013c F8       		.byte	-8
+ 20241 013d 1F       		.byte	31
+ 20242 013e 60       		.byte	96
+ 20243 013f FC       		.byte	-4
+ 20244 0140 01       		.byte	1
+ 20245 0141 60       		.byte	96
+ 20246 0142 3F       		.byte	63
+ 20247 0143 00       		.byte	0
+ 20248 0144 E0       		.byte	-32
+ 20249 0145 07       		.byte	7
+ 20250 0146 00       		.byte	0
+ 20251 0147 E0       		.byte	-32
+ 20252 0148 01       		.byte	1
+ 20253 0149 00       		.byte	0
+ 20254 014a E0       		.byte	-32
+ 20255 014b 00       		.byte	0
+ 20256 014c 00       		.byte	0
+ 20257 014d 00       		.byte	0
+ 20258 014e 00       		.byte	0
+ 20259 014f 00       		.byte	0
+ 20260 0150 00       		.byte	0
+ 20261 0151 00       		.byte	0
+ 20262 0152 00       		.byte	0
+ 20263 0153 00       		.byte	0
+ 20264 0154 C0       		.byte	-64
+ 20265 0155 03       		.byte	3
+ 20266 0156 80       		.byte	-128
+ 20267 0157 E7       		.byte	-25
+ 20268 0158 0F       		.byte	15
+ 20269 0159 C0       		.byte	-64
+ 20270 015a FF       		.byte	-1
+ 20271 015b 0F       		.byte	15
+ 20272 015c E0       		.byte	-32
+ 20273 015d 3F       		.byte	63
+ 20274 015e 1C       		.byte	28
+ 20275 015f E0       		.byte	-32
+ 20276 0160 1C       		.byte	28
+ 20277 0161 18       		.byte	24
+ 20278 0162 60       		.byte	96
+ 20279 0163 18       		.byte	24
+ 20280 0164 18       		.byte	24
+ 20281 0165 60       		.byte	96
+ 20282 0166 18       		.byte	24
+ 20283 0167 18       		.byte	24
+ 20284 0168 E0       		.byte	-32
+ 20285 0169 1C       		.byte	28
+ 20286 016a 18       		.byte	24
+ 20287 016b E0       		.byte	-32
+ 20288 016c 3F       		.byte	63
+ 20289 016d 1C       		.byte	28
+ 20290 016e C0       		.byte	-64
+ 20291 016f FF       		.byte	-1
+ 20292 0170 0F       		.byte	15
+ 20293 0171 80       		.byte	-128
+ 20294 0172 E7       		.byte	-25
+ 20295 0173 0F       		.byte	15
+ 20296 0174 00       		.byte	0
+ 20297 0175 C0       		.byte	-64
+ 20298 0176 03       		.byte	3
+ 20299 0177 00       		.byte	0
+ 20300 0178 00       		.byte	0
+ 20301 0179 00       		.byte	0
+ 20302 017a 00       		.byte	0
+ 20303 017b 00       		.byte	0
+ 20304 017c 00       		.byte	0
+ 20305 017d 00       		.byte	0
+ 20306 017e 0F       		.byte	15
+ 20307 017f 02       		.byte	2
+ 20308 0180 C0       		.byte	-64
+ 20309 0181 3F       		.byte	63
+ 20310 0182 0E       		.byte	14
+ 20311 0183 C0       		.byte	-64
+ 20312 0184 3F       		.byte	63
+ 20313 0185 0E       		.byte	14
+ 20314 0186 E0       		.byte	-32
+ 20315 0187 70       		.byte	112
+ 20316 0188 1C       		.byte	28
+ 20317 0189 60       		.byte	96
+ 20318 018a 60       		.byte	96
+ 20319 018b 18       		.byte	24
+ 20320 018c 60       		.byte	96
+ 20321 018d 60       		.byte	96
+ 20322 018e 18       		.byte	24
+ 20323 018f 60       		.byte	96
+ 20324 0190 60       		.byte	96
+ 20325 0191 18       		.byte	24
+ 20326 0192 60       		.byte	96
+ 20327 0193 60       		.byte	96
+ 20328 0194 1C       		.byte	28
+ 20329 0195 E0       		.byte	-32
+ 20330 0196 30       		.byte	48
+ 20331 0197 0E       		.byte	14
+ 20332 0198 C0       		.byte	-64
+ 20333 0199 FF       		.byte	-1
+ 20334 019a 0F       		.byte	15
+ 20335 019b 80       		.byte	-128
+ 20336 019c FF       		.byte	-1
+ 20337 019d 07       		.byte	7
+ 20338 019e 00       		.byte	0
+ 20339 019f FE       		.byte	-2
+ 20340 01a0 01       		.byte	1
+ 20341 01a1 00       		.byte	0
+ 20342 01a2 00       		.byte	0
+ 20343 01a3 00       		.byte	0
+ 20344 01a4 00       		.byte	0
+ 20345 01a5 00       		.byte	0
+ 20346 01a6 00       		.byte	0
+ 20347 01a7 00       		.byte	0
+ 20348 01a8 00       		.byte	0
+ 20349 01a9 00       		.byte	0
+ 20350 01aa 00       		.byte	0
+ 20351 01ab 00       		.byte	0
+ 20352 01ac 00       		.byte	0
+ 20353 01ad E0       		.byte	-32
+ 20354 01ae 04       		.byte	4
+ 20355 01af 00       		.byte	0
+ 20356 01b0 C0       		.byte	-64
+ 20357 01b1 06       		.byte	6
+ 20358 01b2 00       		.byte	0
+ 20359 01b3 C0       		.byte	-64
+ 20360 01b4 0F       		.byte	15
+ 20361 01b5 00       		.byte	0
+ 20362 01b6 F8       		.byte	-8
+ 20363 01b7 03       		.byte	3
+ 20364 01b8 00       		.byte	0
+ 20365 01b9 F8       		.byte	-8
+ 20366 01ba 01       		.byte	1
+ 20367 01bb 00       		.byte	0
+ 20368 01bc F8       		.byte	-8
+ 20369 01bd 03       		.byte	3
+ 20370 01be 00       		.byte	0
+ 20371 01bf C0       		.byte	-64
+ 20372 01c0 0F       		.byte	15
+ 20373 01c1 00       		.byte	0
+ 20374 01c2 C0       		.byte	-64
+ 20375 01c3 06       		.byte	6
+ 20376 01c4 00       		.byte	0
+ 20377 01c5 E0       		.byte	-32
+ 20378 01c6 04       		.byte	4
+ 20379 01c7 00       		.byte	0
+ 20380 01c8 00       		.byte	0
+ 20381 01c9 00       		.byte	0
+ 20382 01ca 00       		.byte	0
+ 20383 01cb 00       		.byte	0
+ 20384 01cc 00       		.byte	0
+ 20385 01cd 00       		.byte	0
+ 20386 01ce 00       		.byte	0
+ 20387 01cf 00       		.byte	0
+ 20388 01d0 00       		.byte	0
+ 20389 01d1 00       		.byte	0
+ 20390 01d2 80       		.byte	-128
+ 20391 01d3 01       		.byte	1
+ 20392 01d4 00       		.byte	0
+ 20393 01d5 86       		.byte	-122
+ 20394 01d6 01       		.byte	1
+ 20395 01d7 00       		.byte	0
+ 20396 01d8 86       		.byte	-122
+ 20397 01d9 1F       		.byte	31
+ 20398 01da 00       		.byte	0
+ 20399 01db FE       		.byte	-2
+ 20400 01dc 0F       		.byte	15
+ 20401 01dd C0       		.byte	-64
+ 20402 01de FF       		.byte	-1
+ 20403 01df 01       		.byte	1
+ 20404 01e0 E0       		.byte	-32
+ 20405 01e1 87       		.byte	-121
+ 20406 01e2 01       		.byte	1
+ 20407 01e3 00       		.byte	0
+ 20408 01e4 86       		.byte	-122
+ 20409 01e5 01       		.byte	1
+ 20410 01e6 00       		.byte	0
+ 20411 01e7 86       		.byte	-122
+ 20412 01e8 1F       		.byte	31
+ 20413 01e9 00       		.byte	0
+ 20414 01ea FE       		.byte	-2
+ 20415 01eb 0F       		.byte	15
+ 20416 01ec C0       		.byte	-64
+ 20417 01ed FF       		.byte	-1
+ 20418 01ee 01       		.byte	1
+ 20419 01ef E0       		.byte	-32
+ 20420 01f0 87       		.byte	-121
+ 20421 01f1 01       		.byte	1
+ 20422 01f2 00       		.byte	0
+ 20423 01f3 86       		.byte	-122
+ 20424 01f4 01       		.byte	1
+ 20425 01f5 00       		.byte	0
+ 20426 01f6 06       		.byte	6
+ 20427 01f7 00       		.byte	0
+ 20428 01f8 00       		.byte	0
+ 20429 01f9 00       		.byte	0
+ 20430 01fa 00       		.byte	0
+ 20431 01fb 00       		.byte	0
+ 20432 01fc 00       		.byte	0
+ 20433 01fd 00       		.byte	0
+ 20434 01fe 00       		.byte	0
+ 20435 01ff 00       		.byte	0
+ 20436 0200 00       		.byte	0
+ 20437 0201 00       		.byte	0
+ 20438 0202 00       		.byte	0
+ 20439 0203 00       		.byte	0
+ 20440 0204 00       		.byte	0
+ 20441 0205 00       		.byte	0
+ 20442 0206 00       		.byte	0
+ 20443 0207 00       		.byte	0
+ 20444 0208 00       		.byte	0
+ 20445 0209 00       		.byte	0
+ 20446 020a 00       		.byte	0
+ 20447 020b 07       		.byte	7
+ 20448 020c 1C       		.byte	28
+ 20449 020d 00       		.byte	0
+ 20450 020e 07       		.byte	7
+ 20451 020f 1C       		.byte	28
+ 20452 0210 00       		.byte	0
+ 20453 0211 07       		.byte	7
+ 20454 0212 1C       		.byte	28
+ 20455 0213 00       		.byte	0
+ 20456 0214 00       		.byte	0
+ 20457 0215 00       		.byte	0
+ 20458 0216 00       		.byte	0
+ 20459 0217 00       		.byte	0
+ 20460 0218 00       		.byte	0
+ 20461 0219 00       		.byte	0
+ 20462 021a 00       		.byte	0
+ 20463 021b 00       		.byte	0
+ 20464 021c 00       		.byte	0
+ 20465 021d 00       		.byte	0
+ 20466 021e 00       		.byte	0
+ 20467 021f 00       		.byte	0
+ 20468 0220 00       		.byte	0
+ 20469 0221 00       		.byte	0
+ 20470 0222 00       		.byte	0
+ 20471 0223 00       		.byte	0
+ 20472 0224 00       		.byte	0
+ 20473 0225 00       		.byte	0
+ 20474 0226 30       		.byte	48
+ 20475 0227 00       		.byte	0
+ 20476 0228 00       		.byte	0
+ 20477 0229 30       		.byte	48
+ 20478 022a 00       		.byte	0
+ 20479 022b 00       		.byte	0
+ 20480 022c 30       		.byte	48
+ 20481 022d 00       		.byte	0
+ 20482 022e 00       		.byte	0
+ 20483 022f 30       		.byte	48
+ 20484 0230 00       		.byte	0
+ 20485 0231 80       		.byte	-128
+ 20486 0232 FF       		.byte	-1
+ 20487 0233 07       		.byte	7
+ 20488 0234 80       		.byte	-128
+ 20489 0235 FF       		.byte	-1
+ 20490 0236 07       		.byte	7
+ 20491 0237 80       		.byte	-128
+ 20492 0238 FF       		.byte	-1
+ 20493 0239 07       		.byte	7
+ 20494 023a 00       		.byte	0
+ 20495 023b 30       		.byte	48
+ 20496 023c 00       		.byte	0
+ 20497 023d 00       		.byte	0
+ 20498 023e 30       		.byte	48
+ 20499 023f 00       		.byte	0
+ 20500 0240 00       		.byte	0
+ 20501 0241 30       		.byte	48
+ 20502 0242 00       		.byte	0
+ 20503 0243 00       		.byte	0
+ 20504 0244 30       		.byte	48
+ 20505 0245 00       		.byte	0
+ 20506 0246 00       		.byte	0
+ 20507 0247 30       		.byte	48
+ 20508 0248 00       		.byte	0
+ 20509 0249 00       		.byte	0
+ 20510 024a 00       		.byte	0
+ 20511 024b 00       		.byte	0
+ 20512 024c 00       		.byte	0
+ 20513 024d 00       		.byte	0
+ 20514 024e 00       		.byte	0
+ 20515 024f 00       		.byte	0
+ 20516 0250 00       		.byte	0
+ 20517 0251 00       		.byte	0
+ 20518 0252 00       		.byte	0
+ 20519 0253 00       		.byte	0
+ 20520 0254 00       		.byte	0
+ 20521 0255 00       		.byte	0
+ 20522 0256 00       		.byte	0
+ 20523 0257 00       		.byte	0
+ 20524 0258 00       		.byte	0
+ 20525 0259 E0       		.byte	-32
+ 20526 025a 00       		.byte	0
+ 20527 025b 00       		.byte	0
+ 20528 025c E0       		.byte	-32
+ 20529 025d 00       		.byte	0
+ 20530 025e 00       		.byte	0
+ 20531 025f E0       		.byte	-32
+ 20532 0260 00       		.byte	0
+ 20533 0261 00       		.byte	0
+ 20534 0262 E0       		.byte	-32
+ 20535 0263 00       		.byte	0
+ 20536 0264 00       		.byte	0
+ 20537 0265 E0       		.byte	-32
+ 20538 0266 00       		.byte	0
+ 20539 0267 00       		.byte	0
+ 20540 0268 E0       		.byte	-32
+ 20541 0269 00       		.byte	0
+ 20542 026a 00       		.byte	0
+ 20543 026b E0       		.byte	-32
+ 20544 026c 00       		.byte	0
+ 20545 026d 00       		.byte	0
+ 20546 026e 00       		.byte	0
+ 20547 026f 00       		.byte	0
+ 20548 0270 00       		.byte	0
+ 20549 0271 00       		.byte	0
+ 20550 0272 00       		.byte	0
+ 20551 0273 00       		.byte	0
+ 20552 0274 00       		.byte	0
+ 20553 0275 00       		.byte	0
+ 20554 0276 00       		.byte	0
+ 20555 0277 00       		.byte	0
+ 20556 0278 18       		.byte	24
+ 20557 0279 00       		.byte	0
+ 20558 027a 00       		.byte	0
+ 20559 027b 1E       		.byte	30
+ 20560 027c 00       		.byte	0
+ 20561 027d C0       		.byte	-64
+ 20562 027e 1F       		.byte	31
+ 20563 027f 00       		.byte	0
+ 20564 0280 F8       		.byte	-8
+ 20565 0281 1F       		.byte	31
+ 20566 0282 00       		.byte	0
+ 20567 0283 FF       		.byte	-1
+ 20568 0284 01       		.byte	1
+ 20569 0285 E0       		.byte	-32
+ 20570 0286 BF       		.byte	-65
+ 20571 0287 01       		.byte	1
+ 20572 0288 E0       		.byte	-32
+ 20573 0289 83       		.byte	-125
+ 20574 028a 01       		.byte	1
+ 20575 028b E0       		.byte	-32
+ 20576 028c 81       		.byte	-127
+ 20577 028d 01       		.byte	1
+ 20578 028e E0       		.byte	-32
+ 20579 028f 9F       		.byte	-97
+ 20580 0290 01       		.byte	1
+ 20581 0291 C0       		.byte	-64
+ 20582 0292 FF       		.byte	-1
+ 20583 0293 01       		.byte	1
+ 20584 0294 00       		.byte	0
+ 20585 0295 FE       		.byte	-2
+ 20586 0296 07       		.byte	7
+ 20587 0297 00       		.byte	0
+ 20588 0298 F0       		.byte	-16
+ 20589 0299 1F       		.byte	31
+ 20590 029a 00       		.byte	0
+ 20591 029b 80       		.byte	-128
+ 20592 029c 1F       		.byte	31
+ 20593 029d 00       		.byte	0
+ 20594 029e 00       		.byte	0
+ 20595 029f 1C       		.byte	28
+ 20596 02a0 00       		.byte	0
+ 20597 02a1 00       		.byte	0
+ 20598 02a2 00       		.byte	0
+ 20599 02a3 00       		.byte	0
+ 20600 02a4 00       		.byte	0
+ 20601 02a5 00       		.byte	0
+ 20602 02a6 E0       		.byte	-32
+ 20603 02a7 FF       		.byte	-1
+ 20604 02a8 1F       		.byte	31
+ 20605 02a9 E0       		.byte	-32
+ 20606 02aa FF       		.byte	-1
+ 20607 02ab 1F       		.byte	31
+ 20608 02ac E0       		.byte	-32
+ 20609 02ad FF       		.byte	-1
+ 20610 02ae 1F       		.byte	31
+ 20611 02af 60       		.byte	96
+ 20612 02b0 30       		.byte	48
+ 20613 02b1 18       		.byte	24
+ 20614 02b2 60       		.byte	96
+ 20615 02b3 30       		.byte	48
+ 20616 02b4 18       		.byte	24
+ 20617 02b5 60       		.byte	96
+ 20618 02b6 30       		.byte	48
+ 20619 02b7 18       		.byte	24
+ 20620 02b8 60       		.byte	96
+ 20621 02b9 30       		.byte	48
+ 20622 02ba 18       		.byte	24
+ 20623 02bb E0       		.byte	-32
+ 20624 02bc 38       		.byte	56
+ 20625 02bd 18       		.byte	24
+ 20626 02be E0       		.byte	-32
+ 20627 02bf 7F       		.byte	127
+ 20628 02c0 1C       		.byte	28
+ 20629 02c1 C0       		.byte	-64
+ 20630 02c2 EF       		.byte	-17
+ 20631 02c3 0F       		.byte	15
+ 20632 02c4 80       		.byte	-128
+ 20633 02c5 C7       		.byte	-57
+ 20634 02c6 0F       		.byte	15
+ 20635 02c7 00       		.byte	0
+ 20636 02c8 80       		.byte	-128
+ 20637 02c9 07       		.byte	7
+ 20638 02ca 00       		.byte	0
+ 20639 02cb 00       		.byte	0
+ 20640 02cc 00       		.byte	0
+ 20641 02cd 00       		.byte	0
+ 20642 02ce FE       		.byte	-2
+ 20643 02cf 01       		.byte	1
+ 20644 02d0 80       		.byte	-128
+ 20645 02d1 FF       		.byte	-1
+ 20646 02d2 07       		.byte	7
+ 20647 02d3 C0       		.byte	-64
+ 20648 02d4 FF       		.byte	-1
+ 20649 02d5 0F       		.byte	15
+ 20650 02d6 C0       		.byte	-64
+ 20651 02d7 01       		.byte	1
+ 20652 02d8 0E       		.byte	14
+ 20653 02d9 E0       		.byte	-32
+ 20654 02da 00       		.byte	0
+ 20655 02db 1C       		.byte	28
+ 20656 02dc 60       		.byte	96
+ 20657 02dd 00       		.byte	0
+ 20658 02de 18       		.byte	24
+ 20659 02df 60       		.byte	96
+ 20660 02e0 00       		.byte	0
+ 20661 02e1 18       		.byte	24
+ 20662 02e2 E0       		.byte	-32
+ 20663 02e3 00       		.byte	0
+ 20664 02e4 18       		.byte	24
+ 20665 02e5 E0       		.byte	-32
+ 20666 02e6 01       		.byte	1
+ 20667 02e7 1E       		.byte	30
+ 20668 02e8 C0       		.byte	-64
+ 20669 02e9 03       		.byte	3
+ 20670 02ea 0F       		.byte	15
+ 20671 02eb 80       		.byte	-128
+ 20672 02ec 03       		.byte	3
+ 20673 02ed 0F       		.byte	15
+ 20674 02ee 00       		.byte	0
+ 20675 02ef 03       		.byte	3
+ 20676 02f0 03       		.byte	3
+ 20677 02f1 00       		.byte	0
+ 20678 02f2 00       		.byte	0
+ 20679 02f3 00       		.byte	0
+ 20680 02f4 00       		.byte	0
+ 20681 02f5 00       		.byte	0
+ 20682 02f6 00       		.byte	0
+ 20683 02f7 00       		.byte	0
+ 20684 02f8 00       		.byte	0
+ 20685 02f9 00       		.byte	0
+ 20686 02fa E0       		.byte	-32
+ 20687 02fb FF       		.byte	-1
+ 20688 02fc 1F       		.byte	31
+ 20689 02fd E0       		.byte	-32
+ 20690 02fe FF       		.byte	-1
+ 20691 02ff 1F       		.byte	31
+ 20692 0300 E0       		.byte	-32
+ 20693 0301 FF       		.byte	-1
+ 20694 0302 1F       		.byte	31
+ 20695 0303 60       		.byte	96
+ 20696 0304 00       		.byte	0
+ 20697 0305 18       		.byte	24
+ 20698 0306 60       		.byte	96
+ 20699 0307 00       		.byte	0
+ 20700 0308 18       		.byte	24
+ 20701 0309 60       		.byte	96
+ 20702 030a 00       		.byte	0
+ 20703 030b 18       		.byte	24
+ 20704 030c E0       		.byte	-32
+ 20705 030d 00       		.byte	0
+ 20706 030e 18       		.byte	24
+ 20707 030f E0       		.byte	-32
+ 20708 0310 00       		.byte	0
+ 20709 0311 1C       		.byte	28
+ 20710 0312 C0       		.byte	-64
+ 20711 0313 03       		.byte	3
+ 20712 0314 0F       		.byte	15
+ 20713 0315 C0       		.byte	-64
+ 20714 0316 FF       		.byte	-1
+ 20715 0317 0F       		.byte	15
+ 20716 0318 80       		.byte	-128
+ 20717 0319 FF       		.byte	-1
+ 20718 031a 07       		.byte	7
+ 20719 031b 00       		.byte	0
+ 20720 031c FE       		.byte	-2
+ 20721 031d 00       		.byte	0
+ 20722 031e 00       		.byte	0
+ 20723 031f 00       		.byte	0
+ 20724 0320 00       		.byte	0
+ 20725 0321 00       		.byte	0
+ 20726 0322 00       		.byte	0
+ 20727 0323 00       		.byte	0
+ 20728 0324 00       		.byte	0
+ 20729 0325 00       		.byte	0
+ 20730 0326 00       		.byte	0
+ 20731 0327 C0       		.byte	-64
+ 20732 0328 03       		.byte	3
+ 20733 0329 00       		.byte	0
+ 20734 032a E0       		.byte	-32
+ 20735 032b 07       		.byte	7
+ 20736 032c 00       		.byte	0
+ 20737 032d 70       		.byte	112
+ 20738 032e 0E       		.byte	14
+ 20739 032f 00       		.byte	0
+ 20740 0330 30       		.byte	48
+ 20741 0331 0C       		.byte	12
+ 20742 0332 00       		.byte	0
+ 20743 0333 30       		.byte	48
+ 20744 0334 0C       		.byte	12
+ 20745 0335 00       		.byte	0
+ 20746 0336 70       		.byte	112
+ 20747 0337 0E       		.byte	14
+ 20748 0338 00       		.byte	0
+ 20749 0339 E0       		.byte	-32
+ 20750 033a 07       		.byte	7
+ 20751 033b 00       		.byte	0
+ 20752 033c C0       		.byte	-64
+ 20753 033d 03       		.byte	3
+ 20754 033e 00       		.byte	0
+ 20755 033f 00       		.byte	0
+ 20756 0340 00       		.byte	0
+ 20757 0341 00       		.byte	0
+ 20758 0342 00       		.byte	0
+ 20759 0343 00       		.byte	0
+ 20760 0344 00       		.byte	0
+ 20761 0345 00       		.byte	0
+ 20762 0346 00       		.byte	0
+ 20763 0347 00       		.byte	0
+ 20764              		.text
+ 20765              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 lcd1202.c
+     /tmp/cckxfcCe.s:17442  .text.lcd_write_byte:00000000 $t
+     /tmp/cckxfcCe.s:17446  .text.lcd_write_byte:00000000 lcd_write_byte
+     /tmp/cckxfcCe.s:17482  .text.lcd_write_byte:0000001c $d
+     /tmp/cckxfcCe.s:17487  .text.lcd_reverse:00000000 $t
+     /tmp/cckxfcCe.s:17492  .text.lcd_reverse:00000000 lcd_reverse
+     /tmp/cckxfcCe.s:17538  .text.lcd_reverse:00000030 $d
+     /tmp/cckxfcCe.s:17544  .text.lcd_segment_direction:00000000 $t
+     /tmp/cckxfcCe.s:17549  .text.lcd_segment_direction:00000000 lcd_segment_direction
+     /tmp/cckxfcCe.s:17595  .text.lcd_segment_direction:00000030 $d
+     /tmp/cckxfcCe.s:17601  .text.lcd_column_direction:00000000 $t
+     /tmp/cckxfcCe.s:17606  .text.lcd_column_direction:00000000 lcd_column_direction
+     /tmp/cckxfcCe.s:17652  .text.lcd_column_direction:00000030 $d
+     /tmp/cckxfcCe.s:17658  .text.lcd_contrast:00000000 $t
+     /tmp/cckxfcCe.s:17663  .text.lcd_contrast:00000000 lcd_contrast
+     /tmp/cckxfcCe.s:17706  .text.lcd_contrast:00000030 $d
+     /tmp/cckxfcCe.s:17712  .text.lcd_inverse_line:00000000 $t
+     /tmp/cckxfcCe.s:17717  .text.lcd_inverse_line:00000000 lcd_inverse_line
+     /tmp/cckxfcCe.s:17776  .text.lcd_inverse_line:00000048 $d
+     /tmp/cckxfcCe.s:17782  .text.lcd_start_line:00000000 $t
+     /tmp/cckxfcCe.s:17787  .text.lcd_start_line:00000000 lcd_start_line
+     /tmp/cckxfcCe.s:17826  .text.lcd_start_line:0000002c $d
+     /tmp/cckxfcCe.s:17832  .text.lcd_home:00000000 $t
+     /tmp/cckxfcCe.s:17837  .text.lcd_home:00000000 lcd_home
+     /tmp/cckxfcCe.s:17878  .text.lcd_home:00000038 $d
+     /tmp/cckxfcCe.s:17884  .text.lcd_clr:00000000 $t
+     /tmp/cckxfcCe.s:17889  .text.lcd_clr:00000000 lcd_clr
+     /tmp/cckxfcCe.s:17932  .text.lcd_clr:00000034 $d
+     /tmp/cckxfcCe.s:17938  .text.lcd_init:00000000 $t
+     /tmp/cckxfcCe.s:17943  .text.lcd_init:00000000 lcd_init
+     /tmp/cckxfcCe.s:18030  .text.lcd_init:00000068 $d
+                            *COM*:00000004 lcd_flags
+     /tmp/cckxfcCe.s:18038  .text.lcd_char:00000000 $t
+     /tmp/cckxfcCe.s:18043  .text.lcd_char:00000000 lcd_char
+     /tmp/cckxfcCe.s:18163  .text.lcd_char:00000090 $d
+     /tmp/cckxfcCe.s:18171  .text.lcd_str:00000000 $t
+     /tmp/cckxfcCe.s:18176  .text.lcd_str:00000000 lcd_str
+     /tmp/cckxfcCe.s:18227  .text.lcd_str_center:00000000 $t
+     /tmp/cckxfcCe.s:18232  .text.lcd_str_center:00000000 lcd_str_center
+     /tmp/cckxfcCe.s:18272  .text.lcd_big_char:00000000 $t
+     /tmp/cckxfcCe.s:18277  .text.lcd_big_char:00000000 lcd_big_char
+     /tmp/cckxfcCe.s:18383  .text.lcd_big_char:0000008c $d
+     /tmp/cckxfcCe.s:18391  .text.lcd_big_str:00000000 $t
+     /tmp/cckxfcCe.s:18396  .text.lcd_big_str:00000000 lcd_big_str
+     /tmp/cckxfcCe.s:18447  .text.lcd_big_str_center:00000000 $t
+     /tmp/cckxfcCe.s:18452  .text.lcd_big_str_center:00000000 lcd_big_str_center
+     /tmp/cckxfcCe.s:18492  .text.lcd_image:00000000 $t
+     /tmp/cckxfcCe.s:18497  .text.lcd_image:00000000 lcd_image
+     /tmp/cckxfcCe.s:18626  .text.lcd_image:00000094 $d
+     /tmp/cckxfcCe.s:18638  .rodata.font5x8:00000000 font5x8
+     /tmp/cckxfcCe.s:19923  .rodata.fnt_libera_24x14_bits:00000000 fnt_libera_24x14_bits
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+__RBIT
+strlen
