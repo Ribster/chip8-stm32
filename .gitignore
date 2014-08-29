@@ -2,7 +2,7 @@
 *.o
 *.ko
 *.obj
-*.elf
+#*.elf
 
 # Libraries
 *.lib
@@ -20,7 +20,7 @@
 *.app
 *.i*86
 *.x86_64
-*.hex
+#*.hex
 
 
 # Ignore list for Eagle, a PCB layout tool

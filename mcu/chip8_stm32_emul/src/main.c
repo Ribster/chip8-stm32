@@ -319,6 +319,13 @@ void update_controll_button()
 		//delay_ms(200);
 		btn_state[B5] = 0;
 	}
+	//egg
+	if (btn_state[B6]&& GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_4))
+	{
+		lcd_image(0, 0, 8, 96, BAW);
+		btn_state[B6] = 0;
+	}
+
 	if(select_b == 255) select_b=MENU_LEN;
 	if(select_b > MENU_LEN) select_b=0;
 
