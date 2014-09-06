@@ -154,7 +154,7 @@ void EXTI2_IRQHandler(void)
   {
     /* Toggle LED3 */
      //STM32vldiscovery_LEDToggle(LED3);
-	  //disp_string = "PD2 B4    ";
+	  disp_string = "PD2 B4    ";
 	  btn_state[B4] ++;
 
     /* Clear the User Button EXTI line pending bit */

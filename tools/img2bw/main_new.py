@@ -1,10 +1,5 @@
 import Image
 import ImageOps
-import pipeffmpeg 
-import BmpImagePlugin
-import cStringIO as StringIO
-
-bytes_s=eval(open('inp').read())
 
 def func(num, pos):
             return (num & (1 << pos)) >> pos
@@ -65,8 +60,8 @@ def decode(bytes):
 
 def get_hex(input_list):
     i=0
-    header_file = open('image.h','wb')
-    header_file.write('static const unsigned char CHIP8[] = {\n')
+    header_file = open('image.h','ab')
+    header_file.write('static const unsigned char BAW[] = {\n')
     for b in input_list:
         if i > 10:
             header_file.write('\n')
@@ -75,13 +70,11 @@ def get_hex(input_list):
         i+=1
     header_file.write('};\n\n\n')
 
-jj= bytes_s
-out=Image.open('logo_chip8.png')
+out=Image.open('LLb3NGi.png')
 ll =encode(ImageOps.mirror(out.convert("L")))
 jj=decode(ll)
 jj.show()
 print ll
 get_hex(ll)
 print str(len(ll))
-decode(bytes_s).show()
 

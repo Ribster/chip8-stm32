@@ -1,0 +1,7 @@
+1. STM32F100RB (or any 64pin with >20Kb of memory flash and ~8KB of RAM)
+2. Nokia 1202 display
+3. 11 smd button (DTSM-6)
+4. Some of resistor, capacity, 1 transistor bc846 or without it (used for led backlight on/off)
+5. CR2032 battery and holder for it
+6. Switch (SK12N11V04-2500) http://www.rcscomponents.kiev.ua/modules/Asers_Shop/images/datasheets/SK12N11V.pdf
+

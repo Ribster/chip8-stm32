@@ -23,7 +23,7 @@ char update_lcd;
 
 //Main menu
 char select_b;
-uint8_t press, current;
+uint8_t press, current, quit;
 volatile uint8_t btn_old_state[10];
 volatile uint8_t btn_state[10];
 
@@ -156,7 +156,7 @@ void main(void)
 	  GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 
-	  /* Устанавливаем единички на выводах 8 и 9 */
+	  /* ON LED backlight */
 	  GPIO_SetBits(GPIOC, GPIO_Pin_0);
 
 
@@ -166,6 +166,7 @@ void main(void)
 	  }
 
 	  press=1;
+	  quit=0;
 	  current=1;
 	  select_b=0;
 
@@ -187,6 +188,8 @@ void main(void)
 	    //int cnt = 0;
 	    //int i = 0;
 	    //uint8_t okeys = 0xFF;
+
+	for(;;) {
 	    while(1)
 	    {
 	        //int n = cnt;
@@ -209,12 +212,12 @@ void main(void)
 
 				current=select_b;
 
-				lcd_str(0, 0, disp_string);
+				//lcd_str(0, 0, disp_string);
 			}
 
 	    	if(update_lcd)
 	    	{
-	        lcd_str(0, 0, disp_string);
+	        //lcd_str(0, 0, disp_string);
 	        update_lcd = 0;
 	    	}
 
@@ -277,13 +280,22 @@ void main(void)
 				}*/
 				drawFlag = false;
 				lcd_update();
-				lcd_str(0, 0, disp_string);
+				//lcd_str(0, 0, disp_string);
 			}
 			update_game_button();
 
+			if(quit)
+			{
+				press=1;
+				quit = 0;
+				current=1;
+				select_b=0;
+				break;
+			}
+
 		}
 
-
+	}
 /*-----------------*/
 	  do __NOP(); while (1); // зависаем
 }
@@ -332,11 +344,12 @@ void update_controll_button()
 }
 
 void update_game_button() {
-	byte i[4];
+	byte i[5];
 	i[0] = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_8);
 	i[1] = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_12);
 	i[3] = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_11);
 	i[2] = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_9);
+	i[4] = GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_2);
 
 	if (btn_state[UP] && i[0])
 	{
@@ -364,8 +377,17 @@ void update_game_button() {
 		key[0x5] =1;
 		btn_state[LEFT] = 0;
 	}
-	else if (!btn_state[btn_state[DOWN]])
+	else if (!btn_state[btn_state[LEFT]])
 		key[0x5] =0;
+
+	//quit
+	if (btn_state[B4] && i[4])
+	{
+		quit =1;
+		btn_state[B4] = 0;
+	}
+	else if (!btn_state[btn_state[B4]])
+		quit =0;
 }
 
 void SysTick_Worker(void) {
